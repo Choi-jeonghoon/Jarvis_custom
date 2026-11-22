@@ -1,34 +1,23 @@
-import { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
-import { ApprovalBell } from './ApprovalBell';
 import { Sidebar } from './Sidebar/Sidebar';
 import { SystemPulse } from './SystemPulse';
 import { useAppStore } from '../lib/store';
-import { checkHealth } from '../lib/api';
+import { TopBar } from './CommandCenter/TopBar';
+import { CommandCenterDataContext, useCommandCenterData } from './CommandCenter/data';
+import './CommandCenter/CommandCenter.css';
 
 export function Layout() {
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
-  const [apiReachable, setApiReachable] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const check = () => checkHealth().then(setApiReachable);
-    check();
-    const interval = setInterval(check, 30000);
-    const onFocus = () => check();
-    window.addEventListener('focus', onFocus);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', onFocus);
-    };
-  }, []);
+  const ccData = useCommandCenterData();
+  const apiReachable = ccData.apiReachable;
 
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden relative" style={{ paddingTop: '3px' }}>
+    <CommandCenterDataContext.Provider value={ccData}>
+    <div className="cc-shell flex flex-col h-full w-full overflow-hidden relative" style={{ paddingTop: '3px' }}>
       <div className="hud-backdrop" aria-hidden="true" />
       <SystemPulse apiReachable={apiReachable} />
-      <ApprovalBell />
 
       {/* Health check banner */}
       {apiReachable === false && (
@@ -64,11 +53,13 @@ export function Layout() {
           />
         )}
         <main className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden" style={{ background: 'transparent' }}>
+          <TopBar />
           <div className="flex-1 flex flex-col min-w-0 min-h-0 relative z-[2]">
             <Outlet />
           </div>
         </main>
       </div>
     </div>
+    </CommandCenterDataContext.Provider>
   );
 }

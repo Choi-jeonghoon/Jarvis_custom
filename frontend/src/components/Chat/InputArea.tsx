@@ -8,6 +8,7 @@ import { useTtsStore } from '../../lib/tts';
 import { streamChat, streamResearch } from '../../lib/sse';
 import { fetchSavings, getBase, authHeaders } from '../../lib/api';
 import { listConnectors, getSyncStatus } from '../../lib/connectors-api';
+import { OPEN_VOICE_EVENT } from '../CommandCenter/data';
 import { serializeToolCallArguments } from '../../lib/tool-call';
 import {
   engineFromCompletionChunk,
@@ -125,6 +126,17 @@ export function InputArea() {
     prevModelRef.current = selectedModel;
   }, [selectedModel, streamState.isStreaming, resetStream]);
 
+
+  // Sidebar mic / quick commands ask for the voice assistant via a window event.
+  useEffect(() => {
+    const open = () => {
+      setWakeQuery('');
+      setJarvisAutoStart(true);
+      setJarvisOpen(true);
+    };
+    window.addEventListener(OPEN_VOICE_EVENT, open);
+    return () => window.removeEventListener(OPEN_VOICE_EVENT, open);
+  }, []);
 
   useEffect(() => {
     const el = textareaRef.current;

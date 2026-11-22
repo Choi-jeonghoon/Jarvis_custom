@@ -1,25 +1,26 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import {
-  MessageSquare,
-  Plus,
-  BarChart3,
-  Settings,
-  Search,
-  PanelLeftClose,
-  PanelLeft,
-  Cpu,
-  Rocket,
+  LayoutDashboard,
+  BrainCircuit,
   Bot,
-  Sun,
-  Moon,
-  Monitor,
-  Loader2,
-  ScrollText,
   Database,
+  ScrollText,
+  Settings,
+  Rocket,
+  MessagesSquare,
+  Plus,
+  Search,
+  Cpu,
+  Loader2,
+  Mic,
+  Zap,
+  ChevronRight,
+  PanelLeftClose,
 } from 'lucide-react';
 import { ConversationList } from './ConversationList';
 import { useAppStore } from '../../lib/store';
+import { requestVoiceAssistant, useSharedCommandCenterData } from '../CommandCenter/data';
 
 export function Sidebar() {
   const navigate = useNavigate();
@@ -34,202 +35,131 @@ export function Sidebar() {
   const setCommandPaletteOpen = useAppStore((s) => s.setCommandPaletteOpen);
   const modelLoading = useAppStore((s) => s.modelLoading);
   const deepResearch = useAppStore((s) => s.deepResearch);
-
-  const settings = useAppStore((s) => s.settings);
-  const updateSettings = useAppStore((s) => s.updateSettings);
-
-  const ThemeIcon = settings.theme === 'light' ? Sun : settings.theme === 'dark' ? Moon : Monitor;
-  const nextTheme = settings.theme === 'light' ? 'dark' : settings.theme === 'dark' ? 'system' : 'light';
-
+  const conversations = useAppStore((s) => s.conversations);
   const messages = useAppStore((s) => s.messages);
+  const speechEnabled = useAppStore((s) => s.settings.speechEnabled);
+  const isStreaming = useAppStore((s) => s.streamState.isStreaming);
+
+  const { agents, connectors } = useSharedCommandCenterData();
+  const runningAgents = agents?.filter((a) => a.status === 'running').length ?? 0;
+  const connectedSources = connectors?.filter((c) => c.connected).length ?? 0;
+
   const handleNewChat = () => {
     // Don't create a new chat if the current one is empty
-    if (messages.length === 0) {
-      navigate('/');
-      return;
-    }
-    createConversation(selectedModel);
+    if (messages.length > 0) createConversation(selectedModel);
     navigate('/');
   };
 
   const navItems = [
-    { path: '/', icon: MessageSquare, label: 'Chat' },
-    { path: '/dashboard', icon: BarChart3, label: 'Dashboard' },
-    { path: '/data-sources', icon: Database, label: 'Data Sources' },
-    { path: '/agents', icon: Bot, label: 'Agents' },
+    { path: '/', icon: LayoutDashboard, label: 'Command Center' },
+    { path: '/dashboard', icon: BrainCircuit, label: 'AI Core' },
+    { path: '/agents', icon: Bot, label: 'Agents', badge: runningAgents || agents?.length || 0 },
+    { path: '/data-sources', icon: Database, label: 'Knowledge Base', badge: connectedSources },
     { path: '/logs', icon: ScrollText, label: 'Logs' },
     { path: '/settings', icon: Settings, label: 'Settings' },
     { path: '/get-started', icon: Rocket, label: 'Get Started' },
   ];
 
-  return (
-    <>
-      {/* Collapse button when sidebar is closed */}
-      {!sidebarOpen && (
-        <button
-          onClick={toggleSidebar}
-          className="fixed top-3 left-3 z-30 p-2 rounded-lg transition-colors cursor-pointer"
-          style={{ color: 'var(--color-text-secondary)', background: 'var(--color-bg-secondary)' }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-tertiary)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--color-bg-secondary)')}
-        >
-          <PanelLeft size={18} />
-        </button>
-      )}
+  const startVoice = () => {
+    if (location.pathname !== '/') navigate('/');
+    // InputArea lives on the chat route; give it a tick to mount.
+    setTimeout(requestVoiceAssistant, 60);
+  };
 
-      <aside
-        className={`
-          flex flex-col h-full shrink-0 transition-all duration-200 ease-in-out overflow-hidden
-          fixed md:relative z-30
-          ${sidebarOpen ? 'w-[260px]' : 'w-0'}
-        `}
-        style={{
-          background: 'var(--color-sidebar)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderRight: sidebarOpen ? '1px solid var(--color-border)' : 'none',
-        }}
-      >
-        <div className="flex flex-col h-full w-[260px]">
-          {/* Header */}
-          <div className="flex items-center justify-between px-3 pt-3 pb-2">
-            <button
-              onClick={toggleSidebar}
-              className="p-2 rounded-lg transition-colors cursor-pointer"
-              style={{ color: 'var(--color-text-secondary)' }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-tertiary)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-            >
-              <PanelLeftClose size={18} />
+  return (
+    <aside className={`cc-sidebar ${sidebarOpen ? '' : 'is-closed'}`}>
+      <div className="cc-sidebar-inner">
+        {/* Brand */}
+        <div className="cc-brand">
+          <span className="cc-brand-mark" aria-hidden="true"><i /></span>
+          <span className="cc-brand-text">
+            <b>JARVIS</b>
+            <small>COMMAND CENTER</small>
+          </span>
+          <button type="button" className="cc-icon-btn ghost" onClick={toggleSidebar} title="Collapse sidebar">
+            <PanelLeftClose size={15} />
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="cc-nav">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() => navigate(item.path)}
+                className={isActive ? 'is-active' : ''}
+              >
+                <item.icon size={16} />
+                <span>{item.label}</span>
+                {!!item.badge && <em>{item.badge}</em>}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Conversations */}
+        <div className="cc-convos">
+          <div className="cc-section-head">
+            <MessagesSquare size={13} />
+            <span>CONVERSATIONS</span>
+            <em>{conversations.length}</em>
+            <button type="button" className="cc-icon-btn ghost sm" onClick={handleNewChat} title="New chat">
+              <Plus size={14} />
             </button>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => updateSettings({ theme: nextTheme })}
-                className="p-2 rounded-lg transition-colors cursor-pointer"
-                style={{ color: 'var(--color-text-secondary)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-tertiary)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                title={`Theme: ${settings.theme} (click for ${nextTheme})`}
-              >
-                <ThemeIcon size={16} />
-              </button>
-              <button
-                onClick={handleNewChat}
-                className="p-2 rounded-lg transition-colors cursor-pointer"
-                style={{ color: 'var(--color-text-secondary)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-tertiary)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                title="New chat"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
           </div>
 
-          {/* Model badge */}
-          <button
-            onClick={() => setCommandPaletteOpen(true)}
-            className="mx-3 mb-2 flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer"
-            style={{
-              background: 'var(--color-bg-secondary)',
-              color: 'var(--color-text-secondary)',
-              border: '1px solid var(--color-border)',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-tertiary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--color-bg-secondary)')}
-          >
-            {modelLoading ? (
-              <Loader2 size={14} className="animate-spin" style={{ color: 'var(--color-accent)' }} />
-            ) : (
-              <Cpu size={14} />
-            )}
-            <div className="flex-1 min-w-0">
-              <span
-                className="truncate block text-left"
-                style={{ color: deepResearch ? 'var(--color-accent)' : 'var(--color-text)' }}
-              >
-                {deepResearch
+          <button type="button" className="cc-model-btn" onClick={() => setCommandPaletteOpen(true)}>
+            {modelLoading ? <Loader2 size={13} className="animate-spin" /> : <Cpu size={13} />}
+            <span className={deepResearch ? 'is-accent' : ''}>
+              {modelLoading
+                ? 'Loading model…'
+                : deepResearch
                   ? 'Deep Research'
                   : selectedModel || serverInfo?.model || 'Select model'}
-              </span>
-              {modelLoading && (
-                <span className="text-[10px] block text-left" style={{ color: 'var(--color-accent)' }}>
-                  Loading model...
-                </span>
-              )}
-            </div>
-            {!modelLoading && (
-              <kbd
-                className="text-[10px] px-1.5 py-0.5 rounded font-mono"
-                style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text-tertiary)' }}
-              >
-                ⌘K
-              </kbd>
-            )}
+            </span>
+            <kbd>⌘K</kbd>
           </button>
 
-          {/* Search */}
-          <div className="px-3 mb-2">
-            <div
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm"
-              style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
-            >
-              <Search size={14} style={{ color: 'var(--color-text-tertiary)' }} />
-              <input
-                type="text"
-                placeholder="Search chats..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent outline-none text-sm"
-                style={{ color: 'var(--color-text)' }}
-              />
-            </div>
-          </div>
+          <label className="cc-side-search">
+            <Search size={13} />
+            <input
+              type="text"
+              placeholder="Search chats…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </label>
 
-          {/* Conversation list */}
-          <div className="flex-1 overflow-y-auto px-2">
+          <div className="cc-convo-list">
             <ConversationList searchQuery={searchQuery} />
           </div>
-
-          {/* Bottom nav */}
-          <nav className="px-2 pb-3 pt-2 flex flex-col gap-0.5" style={{ borderTop: '1px solid var(--color-border)' }}>
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => navigate(item.path)}
-                  className="relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors w-full text-left cursor-pointer"
-                  style={{
-                    background: isActive ? 'var(--color-accent-subtle)' : 'transparent',
-                    color: isActive ? 'var(--color-text)' : 'var(--color-text-secondary)',
-                    fontWeight: isActive ? 500 : 400,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) e.currentTarget.style.background = 'var(--color-bg-secondary)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) e.currentTarget.style.background = 'transparent';
-                  }}
-                >
-                  {isActive && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute left-0 top-1.5 bottom-1.5 w-[2px] rounded-full"
-                      style={{
-                        background: 'var(--color-accent)',
-                        boxShadow: '0 0 8px var(--color-accent-glow)',
-                      }}
-                    />
-                  )}
-                  <item.icon size={16} style={isActive ? { color: 'var(--color-accent)' } : undefined} />
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
         </div>
-      </aside>
-    </>
+
+        {/* Voice status */}
+        <div className="cc-voice-card">
+          <div className="cc-section-head">
+            <span>VOICE STATUS</span>
+            <ChevronRight size={13} />
+          </div>
+          <div className={`cc-voice-wave ${speechEnabled || isStreaming ? 'is-live' : ''}`} aria-hidden="true">
+            {Array.from({ length: 26 }, (_, i) => (
+              <i key={i} style={{ ['--h' as string]: `${20 + ((i * 41) % 75)}%`, animationDelay: `${(i % 9) * 0.08}s` }} />
+            ))}
+          </div>
+          <p>{isStreaming ? 'Processing…' : speechEnabled ? 'Listening…' : 'Voice standby'}</p>
+          <button type="button" className="cc-mic" onClick={startVoice} title="Tap to speak">
+            <Mic size={22} />
+          </button>
+          <small>Tap to Speak</small>
+        </div>
+
+        <button type="button" className="cc-focus-btn" onClick={toggleSidebar}>
+          <Zap size={13} /> Focus Mode
+        </button>
+      </div>
+    </aside>
   );
 }
