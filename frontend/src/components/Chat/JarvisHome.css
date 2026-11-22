@@ -1,0 +1,677 @@
+
+.jarvis-chat-page {
+  background:
+    radial-gradient(
+      ellipse at 50% 45%,
+      rgba(0, 155, 200, 0.07),
+      transparent 48%
+    ),
+    var(--color-bg);
+}
+
+.jarvis-home {
+  position: relative;
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 35px 20px;
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(0, 180, 220, 0.055),
+      transparent 35%
+    );
+}
+
+.jarvis-home-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  gap: 15px;
+  animation: jarvis-appear 1s ease both;
+}
+
+.jarvis-home-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #27c8e8;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  margin-bottom: 10px;
+}
+
+.jarvis-reactor {
+  position: relative;
+  width: 230px;
+  height: 230px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0 18px;
+}
+
+.jarvis-reactor-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(35, 195, 230, 0.38);
+  box-shadow:
+    0 0 14px rgba(0, 190, 230, 0.08),
+    inset 0 0 14px rgba(0, 190, 230, 0.04);
+}
+
+.ring-one {
+  width: 100%;
+  height: 100%;
+  border-style: dashed;
+  animation: jarvis-rotate 35s linear infinite;
+}
+
+.ring-two {
+  width: 82%;
+  height: 82%;
+  border-width: 2px;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  animation: jarvis-rotate-reverse 18s linear infinite;
+}
+
+.ring-three {
+  width: 64%;
+  height: 64%;
+  border-style: dashed;
+  border-color: rgba(35, 195, 230, 0.55);
+  animation: jarvis-rotate 22s linear infinite;
+}
+
+.ring-four {
+  width: 45%;
+  height: 45%;
+  border-color: rgba(35, 195, 230, 0.65);
+  box-shadow: 0 0 28px rgba(0, 190, 230, 0.16);
+}
+
+.jarvis-reactor-core {
+  width: 88px;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #54dcf7;
+  background: radial-gradient(
+    circle,
+    rgba(0, 190, 230, 0.23),
+    rgba(0, 100, 150, 0.08) 65%,
+    transparent
+  );
+  box-shadow:
+    0 0 30px rgba(0, 190, 230, 0.23),
+    inset 0 0 20px rgba(0, 190, 230, 0.12);
+  animation: jarvis-pulse 3s ease-in-out infinite;
+}
+
+.jarvis-reactor-dot {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #53dff8;
+  box-shadow: 0 0 12px #20c8ef;
+}
+
+.dot-one {
+  top: 17%;
+  left: 22%;
+}
+
+.dot-two {
+  right: 12%;
+  top: 45%;
+}
+
+.dot-three {
+  bottom: 17%;
+  left: 36%;
+}
+
+.jarvis-home-greeting h1 {
+  color: var(--color-text);
+  font-size: 29px;
+  font-weight: 300;
+  letter-spacing: 8px;
+  margin: 0;
+}
+
+.jarvis-home-greeting p {
+  color: #27c8e8;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 5px;
+  margin-top: 9px;
+}
+
+.jarvis-home-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px;
+  color: #27c8e8;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+
+.jarvis-status-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #24d6a0;
+  box-shadow: 0 0 10px #24d6a0;
+  animation: jarvis-status-blink 2s ease-in-out infinite;
+}
+
+.jarvis-home-description {
+  color: var(--color-text);
+  font-size: 19px;
+  font-weight: 500;
+  margin: 12px 0 0;
+}
+
+.jarvis-home-subdescription {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  margin: 0;
+}
+
+.jarvis-home-footer {
+  position: absolute;
+  bottom: 18px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  color: var(--color-text-tertiary);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  opacity: 0.6;
+}
+
+@keyframes jarvis-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes jarvis-rotate-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes jarvis-pulse {
+  0%, 100% {
+    transform: scale(0.96);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+@keyframes jarvis-status-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes jarvis-appear {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* JARVIS command HUD */
+.jarvis-hud-home {
+  position: relative;
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(40, 197, 235, 0.13), transparent 24%),
+    linear-gradient(135deg, rgba(11, 62, 83, 0.12), transparent 35%, rgba(11, 62, 83, 0.12));
+}
+
+.jarvis-hud-grid {
+  position: absolute;
+  inset: 0;
+  opacity: .42;
+  background-image:
+    linear-gradient(rgba(75, 203, 232, .08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(75, 203, 232, .08) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at center, black 15%, transparent 78%);
+}
+
+.jarvis-center-interface {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(-8px);
+}
+
+.jarvis-center-interface .jarvis-reactor {
+  width: 270px;
+  height: 270px;
+}
+
+.jarvis-reactor-active {
+  filter: drop-shadow(0 0 22px rgba(40, 205, 244, .24));
+}
+
+.jarvis-reactor-active .ring-one {
+  border-style: solid;
+  border-width: 1px;
+  border-color: rgba(95, 230, 255, .22);
+  box-shadow: 0 0 35px rgba(45, 210, 250, .10), inset 0 0 35px rgba(45, 210, 250, .08);
+}
+
+.jarvis-side-stack {
+  position: absolute;
+  z-index: 3;
+  width: 210px;
+  height: 210px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 11px;
+  padding: 28px;
+  border: 1px solid rgba(75, 205, 235, .22);
+  color: #91dfee;
+  background:
+    linear-gradient(135deg, rgba(12, 72, 94, .23), rgba(3, 20, 31, .52));
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .2s, background .2s, transform .2s;
+}
+
+.jarvis-side-stack:hover,
+.jarvis-micro-card:hover {
+  border-color: rgba(102, 225, 255, .55);
+  background: rgba(20, 105, 130, .18);
+  transform: translateY(-2px);
+}
+
+.jarvis-side-left { left: clamp(22px, 5vw, 72px); top: 23%; }
+.jarvis-side-right { right: clamp(22px, 5vw, 72px); top: 23%; }
+
+.jarvis-side-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+  color: #60daf5;
+  font: 700 9px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .18em;
+}
+
+.jarvis-side-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(188, 229, 238, .72);
+  font: 600 9px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .08em;
+}
+
+.jarvis-side-row i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #58d7a5;
+  box-shadow: 0 0 8px #58d7a5;
+}
+
+.jarvis-side-code {
+  margin-top: 8px;
+  color: rgba(112, 203, 223, .42);
+  font: 9px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.jarvis-micro-card {
+  position: absolute;
+  z-index: 3;
+  min-width: 168px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  border: 1px solid rgba(75, 205, 235, .18);
+  color: #66d8ef;
+  background: rgba(5, 29, 43, .72);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  cursor: pointer;
+  text-align: left;
+  transition: .2s;
+}
+
+.jarvis-micro-card span { display: flex; flex-direction: column; }
+.jarvis-micro-card b { font: 700 8px ui-monospace, monospace; letter-spacing: .16em; }
+.jarvis-micro-card small { margin-top: 3px; color: rgba(175, 220, 230, .48); font: 7px ui-monospace, monospace; }
+.jarvis-card-left { left: clamp(22px, 6vw, 86px); bottom: 22%; }
+.jarvis-card-right { right: clamp(22px, 6vw, 86px); bottom: 22%; }
+.jarvis-card-bottom { left: 50%; bottom: 8%; transform: translateX(-50%); }
+.jarvis-card-bottom:hover { transform: translateX(-50%) translateY(-2px); }
+
+.jarvis-input-dock {
+  position: relative;
+  width: min(680px, calc(100% - 32px));
+  margin: 0 auto 14px;
+  display: grid;
+  grid-template-columns: 1fr 44px;
+  align-items: center;
+  gap: 8px;
+}
+
+.jarvis-dock-orb,
+.jarvis-research-button,
+.jarvis-command-send {
+  border: 1px solid rgba(78, 210, 242, .28);
+  color: #66dcf7;
+  background: rgba(7, 54, 70, .32);
+  cursor: pointer;
+}
+
+.jarvis-dock-orb,
+.jarvis-research-button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.jarvis-dock-orb {
+  box-shadow: 0 0 20px rgba(42, 200, 238, .12), inset 0 0 12px rgba(42, 200, 238, .08);
+}
+
+.jarvis-dock-orb:disabled { opacity: .35; cursor: not-allowed; }
+
+.jarvis-command-bar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 5px 5px 16px;
+  border: 1px solid rgba(78, 210, 242, .22);
+  border-radius: 22px;
+  background: rgba(5, 25, 36, .86);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .16), inset 0 0 18px rgba(48, 190, 220, .025);
+}
+
+.jarvis-command-input {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #dff7fb;
+  font-size: 13px;
+}
+
+.jarvis-command-input::placeholder { color: rgba(169, 214, 224, .42); }
+
+.jarvis-command-send {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.jarvis-command-send:disabled { opacity: .28; cursor: not-allowed; }
+.jarvis-command-stop { color: #ff9b82; border-color: rgba(255, 120, 100, .38); }
+.jarvis-sync-status { text-align: center; margin: -8px 0 8px; color: rgba(112, 211, 232, .55); font-size: 9px; letter-spacing: .12em; }
+.jarvis-wake-status {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  margin: -7px auto 10px;
+  color: rgba(160, 205, 217, .55);
+  font: 9px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .08em;
+}
+
+.jarvis-wake-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(160, 205, 217, .4);
+}
+
+.jarvis-wake-dot.is-active {
+  background: #58e69a;
+  box-shadow: 0 0 8px #58e69a;
+}
+
+@media (max-width: 980px) {
+  .jarvis-side-stack { width: 180px; height: 180px; }
+  .jarvis-side-left { left: 18px; }
+  .jarvis-side-right { right: 18px; }
+  .jarvis-micro-card { opacity: .82; }
+}
+
+@media (max-width: 720px) {
+  .jarvis-side-stack { width: 138px; height: 138px; padding: 16px; }
+  .jarvis-side-left { left: 8px; }
+  .jarvis-side-right { right: 8px; }
+  .jarvis-side-row:nth-of-type(n+4) { display: none; }
+  .jarvis-micro-card { display: none; }
+  .jarvis-center-interface .jarvis-reactor { width: 220px; height: 220px; }
+}
+
+@media (max-width: 600px) {
+  .jarvis-reactor {
+    width: 185px;
+    height: 185px;
+  }
+
+  .jarvis-home-greeting h1 {
+    font-size: 24px;
+  }
+
+  .jarvis-home-footer {
+    font-size: 8px;
+    gap: 10px;
+  }
+}
+
+/* =========================================
+   JARVIS Glass Conversation Overlay
+========================================= */
+
+/* HUD 전체 영역 */
+.jarvis-chat-page {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.jarvis-hud-home {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 대화가 표시되는 투명 패널 */
+.jarvis-conversation-overlay {
+  position: absolute;
+  z-index: 10;
+
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+
+  width: min(760px, calc(100% - 40px));
+  max-height: 38%;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  border: 1px solid rgba(75, 205, 235, 0.30);
+  border-radius: 14px;
+
+  background: rgba(4, 22, 35, 0.68);
+
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.22),
+    inset 0 0 25px rgba(40, 190, 225, 0.04);
+
+  animation: jarvis-overlay-appear 0.35s ease both;
+}
+
+/* 패널 상단 헤더 */
+.jarvis-conversation-header {
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 11px 16px;
+
+  border-bottom: 1px solid rgba(75, 205, 235, 0.18);
+
+  color: #67dff7;
+  background: rgba(5, 35, 49, 0.35);
+
+  font: 700 9px ui-monospace, monospace;
+  letter-spacing: 0.14em;
+}
+
+.jarvis-conversation-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jarvis-conversation-indicator {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  color: #58d7a5;
+  font-size: 8px;
+}
+
+.jarvis-conversation-indicator i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+
+  background: #58d7a5;
+  box-shadow: 0 0 8px #58d7a5;
+
+  animation: jarvis-status-blink 2s ease-in-out infinite;
+}
+
+/* 메시지 스크롤 영역 */
+.jarvis-conversation-messages {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  padding: 14px 18px;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(75, 205, 235, 0.35) transparent;
+}
+
+.jarvis-conversation-messages::-webkit-scrollbar {
+  width: 4px;
+}
+
+.jarvis-conversation-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.jarvis-conversation-messages::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: rgba(75, 205, 235, 0.3);
+}
+
+/* 대화 패널이 열리면 하단 카드 숨김 */
+.jarvis-hud-home:has(.jarvis-conversation-overlay) .jarvis-card-bottom {
+  display: none;
+}
+
+/* 패널 등장 애니메이션 */
+@keyframes jarvis-overlay-appear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* 태블릿 */
+@media (max-width: 980px) {
+  .jarvis-conversation-overlay {
+    width: min(700px, calc(100% - 32px));
+    max-height: 40%;
+  }
+}
+
+/* 모바일 */
+@media (max-width: 720px) {
+  .jarvis-conversation-overlay {
+    width: calc(100% - 20px);
+    bottom: 10px;
+    max-height: 42%;
+  }
+
+  .jarvis-conversation-messages {
+    padding: 10px;
+  }
+}

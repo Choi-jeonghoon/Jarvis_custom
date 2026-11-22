@@ -1005,6 +1005,17 @@ async def transcribe_speech(request: Request):
     audio_bytes = await audio_file.read()
     language = form.get("language")
 
+    if not language:
+        config = getattr(request.app.state, "config", None)
+
+        if config is None:
+            from openjarvis.core.config import load_config
+            config = load_config()
+
+        language = (
+            getattr(config.speech, "language", "") or ""
+        ).strip() or None
+
     # Detect format from filename
     filename = getattr(audio_file, "filename", "audio.wav")
     ext = filename.rsplit(".", 1)[-1] if "." in filename else "wav"
