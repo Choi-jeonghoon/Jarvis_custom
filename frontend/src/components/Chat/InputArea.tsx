@@ -1,7 +1,10 @@
+import { WakeAssistant } from './WakeAssistant';
+import { JarvisAssistant } from './JarvisAssistant';
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Send, Square, Paperclip, Search } from 'lucide-react';
+import { Send, Square, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppStore, generateId } from '../../lib/store';
+import { useTtsStore } from '../../lib/tts';
 import { streamChat, streamResearch } from '../../lib/sse';
 import { fetchSavings, getBase, authHeaders } from '../../lib/api';
 import { listConnectors, getSyncStatus } from '../../lib/connectors-api';
@@ -10,8 +13,6 @@ import {
   engineFromCompletionChunk,
   resolveChatEngine,
 } from '../../lib/chat-telemetry';
-import { MicButton } from './MicButton';
-import { useSpeech } from '../../hooks/useSpeech';
 import type {
   ChatMessage,
   MessageTelemetry,
@@ -81,6 +82,11 @@ function useResearchCorpusSync(enabled: boolean): {
 
 export function InputArea() {
   const [input, setInput] = useState('');
+  const [jarvisOpen, setJarvisOpen] = useState(false);
+  const [jarvisAutoStart, setJarvisAutoStart] = useState(false);
+  const [wakeResetKey, setWakeResetKey] = useState(0);
+  const [wakeQuery, setWakeQuery] = useState('');
+  const [wakeStatus, setWakeStatus] = useState('호출어 대기 중');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -103,14 +109,6 @@ export function InputArea() {
   const corpusSync = useResearchCorpusSync(deepResearch);
   const isCurrentChatStreaming = streamState.isStreaming && streamState.conversationId === activeId;
 
-  const {
-    state: speechState,
-    error: speechError,
-    available: speechAvailable,
-    startRecording,
-    stopRecording,
-  } = useSpeech();
-
   // Abort in-flight stream when the user switches models mid-generation.
   // This prevents errors from trying to continue a stream with a stale model.
   const prevModelRef = useRef(selectedModel);
@@ -127,33 +125,6 @@ export function InputArea() {
     prevModelRef.current = selectedModel;
   }, [selectedModel, streamState.isStreaming, resetStream]);
 
-  const micDisabled = !speechEnabled || !speechAvailable || streamState.isStreaming;
-  const micReason: 'not-enabled' | 'no-backend' | 'streaming' | undefined =
-    !speechEnabled ? 'not-enabled'
-    : !speechAvailable ? 'no-backend'
-    : streamState.isStreaming ? 'streaming'
-    : undefined;
-
-  useEffect(() => {
-    if (speechError) {
-      toast.error(speechError, { duration: 8000 });
-    }
-  }, [speechError]);
-
-  const handleMicClick = useCallback(async () => {
-    if (speechState === 'recording') {
-      try {
-        const text = await stopRecording();
-        if (text) {
-          setInput((prev) => (prev ? prev + ' ' + text : text));
-        }
-      } catch {
-        // Error is captured in useSpeech
-      }
-    } else {
-      await startRecording();
-    }
-  }, [speechState, startRecording, stopRecording]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -171,8 +142,8 @@ export function InputArea() {
     resetStream();
   }, [resetStream]);
 
-  const sendMessage = useCallback(async () => {
-    const content = input.trim();
+  const sendMessage = useCallback(async (overrideText?: string): Promise<string | undefined> => {
+    const content = (overrideText ?? input).trim();
     if (!content || streamState.isStreaming) return;
     if (!selectedModel) {
       toast.error('Pick a model first (⌘K)');
@@ -508,6 +479,10 @@ export function InputArea() {
         // Not a digest response or server unavailable — skip
       }
 
+      if (overrideText) {
+        useTtsStore.getState().markAutoSpoken(assistantMsg.id);
+      }
+
       updateLastAssistant(
         convId,
         accumulatedContent,
@@ -539,6 +514,7 @@ export function InputArea() {
           .catch(() => {});
       }
     }
+    return accumulatedContent;
   }, [
     input,
     activeId,
@@ -562,96 +538,88 @@ export function InputArea() {
   };
 
   return (
-    <div className="px-4 pb-4 pt-2" style={{ maxWidth: 'var(--chat-max-width)', margin: '0 auto', width: '100%' }}>
-      <div className="mb-2 flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setDeepResearch(!deepResearch)}
-            disabled={streamState.isStreaming}
-            aria-pressed={deepResearch}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs transition-colors cursor-pointer disabled:cursor-default disabled:opacity-50"
-            style={{
-              background: deepResearch ? 'var(--color-accent-subtle)' : 'transparent',
-              border: `1px solid ${deepResearch ? 'var(--color-accent)' : 'var(--color-border)'}`,
-              color: deepResearch ? 'var(--color-accent)' : 'var(--color-text-tertiary)',
-            }}
-            title={deepResearch ? 'Deep Research: on' : 'Deep Research: off'}
-          >
-            <Search size={12} />
-            Deep Research
-          </button>
-        </div>
-        {deepResearch && corpusSync.syncing && corpusSync.itemsSynced > 0 && (
-          <div
-            className="text-[11px] leading-snug"
-            style={{ color: 'var(--color-text-tertiary)' }}
-          >
-            Searching over{' '}
-            <span key={corpusSync.itemsSynced} className="sync-bump" style={{ color: 'var(--color-text-secondary)' }}>
-              {corpusSync.itemsSynced.toLocaleString()}
-            </span>{' '}
-            items — sync in progress, results will improve as more data is indexed.
-          </div>
-        )}
-      </div>
-      <div
-        className="flex items-center gap-2 rounded-2xl px-4 py-3 transition-shadow"
-        style={{
-          background: 'var(--color-input-bg)',
-          border: '1px solid var(--color-input-border)',
-          boxShadow: 'var(--shadow-sm)',
-        }}
-      >
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={selectedModel ? 'Message OpenJarvis...' : 'Pick a model first (⌘K)...'}
-          rows={1}
-          className="flex-1 bg-transparent outline-none resize-none text-sm leading-relaxed"
-          style={{ color: 'var(--color-text)', maxHeight: '200px' }}
-          disabled={streamState.isStreaming || modelLoading}
+    <>
+      <div className="jarvis-input-dock">
+        <WakeAssistant
+          enabled={speechEnabled && !streamState.isStreaming}
+          resetKey={wakeResetKey}
+          onStatus={setWakeStatus}
+          onWake={(query) => {
+            setWakeQuery(query ?? '');
+            setJarvisAutoStart(true);
+            setJarvisOpen(true);
+          }}
         />
-        {isCurrentChatStreaming ? (
-          <button
-            onClick={stopStreaming}
-            className="p-2 rounded-xl transition-colors shrink-0 cursor-pointer"
-            style={{ background: 'var(--color-error)', color: 'var(--color-on-accent)' }}
-            title="Stop generating"
-          >
-            <Square size={16} />
-          </button>
-        ) : (
-          <div className="flex items-center gap-1">
-            <MicButton
-              state={speechState}
-              onClick={handleMicClick}
-              disabled={micDisabled}
-              reason={micReason}
-            />
+
+
+        <div className="jarvis-command-bar">
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={selectedModel ? 'JARVIS에게 명령을 입력하세요' : '먼저 모델을 선택하세요'}
+            rows={1}
+            className="jarvis-command-input"
+            disabled={streamState.isStreaming || modelLoading}
+          />
+
+          {isCurrentChatStreaming ? (
             <button
-              onClick={sendMessage}
-              disabled={streamState.isStreaming || !input.trim() || modelLoading || !selectedModel}
-              title={selectedModel ? 'Send message' : 'Pick a model first (⌘K)'}
-              className="p-2 rounded-xl transition-colors shrink-0 cursor-pointer disabled:opacity-30 disabled:cursor-default"
-              style={{
-                background: input.trim() ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
-                color: input.trim() ? 'white' : 'var(--color-text-tertiary)',
-              }}
+              onClick={stopStreaming}
+              className="jarvis-command-send jarvis-command-stop"
+              title="생성 중지"
             >
-              <Send size={16} />
+              <Square size={15} />
             </button>
-          </div>
-        )}
+          ) : (
+            <button
+              onClick={() => void sendMessage()}
+              disabled={!input.trim() || modelLoading || !selectedModel}
+              className="jarvis-command-send"
+              title={selectedModel ? '전송' : '모델을 선택하세요'}
+            >
+              <Send size={17} />
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className="jarvis-research-button"
+          onClick={() => setDeepResearch(!deepResearch)}
+          disabled={streamState.isStreaming}
+          aria-pressed={deepResearch}
+          title="심층 조사 모드"
+        >
+          <Search size={15} />
+        </button>
       </div>
-      <div className="flex items-center justify-center mt-2 text-[11px]" style={{ color: 'var(--color-text-tertiary)' }}>
-        <span>
-          <kbd className="font-mono">Enter</kbd> to send &middot;{' '}
-          <kbd className="font-mono">Shift+Enter</kbd> for new line
-        </span>
+
+      <div className="jarvis-wake-status" aria-live="polite">
+        <span className={speechEnabled ? 'jarvis-wake-dot is-active' : 'jarvis-wake-dot'} />
+        {wakeStatus}
       </div>
-    </div>
+
+      {deepResearch && corpusSync.syncing && corpusSync.itemsSynced > 0 && (
+        <div className="jarvis-sync-status">
+          자료 동기화 중 · {corpusSync.itemsSynced.toLocaleString()} items
+        </div>
+      )}
+
+      {jarvisOpen && (
+        <JarvisAssistant
+          autoStart={jarvisAutoStart}
+          initialQuery={wakeQuery}
+          onClose={() => {
+            setJarvisOpen(false);
+            setJarvisAutoStart(false);
+            setWakeQuery('');
+            setWakeResetKey((key) => key + 1);
+          }}
+          sendMessage={sendMessage}
+        />
+      )}
+    </>
   );
 }
