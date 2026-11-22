@@ -292,7 +292,7 @@ export const useAppStore = create<AppState>((set, get) => {
     settings: loadSettings(),
 
     commandPaletteOpen: false,
-    sidebarOpen: false,
+    sidebarOpen: typeof window !== 'undefined' && window.innerWidth >= 1024,
     systemPanelOpen: false,
 
     optInEnabled: localStorage.getItem(OPTIN_KEY) === 'true',
