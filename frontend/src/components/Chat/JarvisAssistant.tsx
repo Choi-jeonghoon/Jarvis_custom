@@ -4,6 +4,7 @@ import { X, AudioLines } from 'lucide-react';
 import { useSpeech } from '../../hooks/useSpeech';
 import { useTtsStore } from '../../lib/tts';
 import { generateId } from '../../lib/store';
+import { checkMicrophone } from '../../lib/micCheck';
 import './JarvisAssistant.css';
 
 type Phase =
@@ -39,6 +40,7 @@ export function JarvisAssistant({
   const [phase, setPhase] = useState<Phase>('standby');
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
+  const [micUnavailable, setMicUnavailable] = useState(false);
 
   const activeRef = useRef(false);
   const browserRecognitionRef = useRef<any>(null);
@@ -165,8 +167,18 @@ export function JarvisAssistant({
 
     if (SpeechRecognition) {
       try {
-        if (browserRecognitionRef.current) {
-          browserRecognitionRef.current.stop();
+        // 이전 인스턴스의 핸들러를 끊고 중단한다. (끊지 않으면 이전 인스턴스가
+        // 'aborted' 오류를 내며 새 세션을 오류 상태로 만든다.)
+        const previous = browserRecognitionRef.current;
+        if (previous) {
+          previous.onresult = null;
+          previous.onerror = null;
+          previous.onend = null;
+          try { previous.abort(); } catch {}
+        }
+        if (browserRestartRef.current) {
+          window.clearTimeout(browserRestartRef.current);
+          browserRestartRef.current = null;
         }
 
         const recognition = new SpeechRecognition();
@@ -194,16 +206,24 @@ export function JarvisAssistant({
         };
 
         recognition.onerror = (event: any) => {
-          if (!activeRef.current || event.error === 'no-speech') return;
-          if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-            setPhase('error');
-            setResponse('마이크 권한이 차단되었습니다. 브라우저 또는 앱 설정에서 마이크를 허용해 주세요.');
-            return;
-          }
+          if (!activeRef.current || browserRecognitionRef.current !== recognition) return;
+          // no-speech / aborted 는 재시작 과정에서 생기는 정상 이벤트 → onend에서 자동 재시작
+          if (event.error === 'no-speech' || event.error === 'aborted') return;
+
+          const fatal: Record<string, string> = {
+            'not-allowed': '마이크 권한이 차단되었습니다. 브라우저 또는 앱 설정에서 마이크를 허용해 주세요.',
+            'service-not-allowed': '마이크 권한이 차단되었습니다. 브라우저 또는 앱 설정에서 마이크를 허용해 주세요.',
+            'audio-capture': '마이크를 찾을 수 없습니다. 클램쉘 모드라면 외부 마이크(AirPods·EarPods·USB 마이크)를 연결해 주세요. 텍스트 입력은 계속 사용할 수 있습니다.',
+            network: '음성 인식 서버에 연결할 수 없습니다. 네트워크를 확인해 주세요.',
+          };
+
+          activeRef.current = false; // 오류 상태에서 무한 재시작 방지
           setPhase('error');
-          setResponse(`음성 인식 오류: ${event.error}`);
+          setResponse(fatal[event.error] ?? `음성 인식 오류: ${event.error}`);
+          if (event.error === 'audio-capture') setMicUnavailable(true);
         };
         recognition.onend = () => {
+          if (browserRecognitionRef.current !== recognition) return;
           if (!activeRef.current || processingVoiceRef.current) return;
 
           browserRestartRef.current = setTimeout(() => {
@@ -323,8 +343,18 @@ export function JarvisAssistant({
       return;
     }
 
-    activeRef.current = true;
     setTranscript('');
+    setResponse('마이크 상태를 확인하는 중…');
+    const mic = await checkMicrophone();
+    if (!mic.ok) {
+      setMicUnavailable(mic.reason === 'no-device' || mic.reason === 'silent');
+      setPhase('error');
+      setResponse(mic.message);
+      return;
+    }
+
+    setMicUnavailable(false);
+    activeRef.current = true;
     setResponse('');
     await startListeningRef.current();
   }, [available]);
@@ -335,8 +365,14 @@ export function JarvisAssistant({
       window.clearTimeout(browserRestartRef.current);
       browserRestartRef.current = null;
     }
-    try { browserRecognitionRef.current?.stop(); } catch {}
+    const recognition = browserRecognitionRef.current;
     browserRecognitionRef.current = null;
+    if (recognition) {
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+      try { recognition.abort(); } catch {}
+    }
     processingVoiceRef.current = false;
     cancelRecording();
     useTtsStore.getState().stop();
@@ -416,7 +452,9 @@ export function JarvisAssistant({
             {status === 'transcribing' && '음성을 텍스트로 변환하고 있습니다'}
             {status === 'thinking' && '로컬 AI가 답변을 생성하고 있습니다'}
             {status === 'speaking' && '답변을 전달하고 있습니다'}
-            {status === 'error' && '음성 기능을 확인해 주세요. 텍스트 입력은 가능합니다.'}
+            {status === 'error' && (micUnavailable
+              ? '사용 가능한 마이크가 없습니다 · 텍스트 입력은 계속 가능합니다'
+              : '음성 기능을 확인해 주세요. 텍스트 입력은 가능합니다.')}
           </p>
 
           <section className="jarvis-hud-readouts" aria-live="polite">
@@ -428,7 +466,9 @@ export function JarvisAssistant({
               <p className={transcript ? '' : 'jarvis-readout-placeholder'}>
                 {transcript || (status === 'listening'
                   ? '듣고 있습니다. 음성이 인식되면 여기에 표시됩니다.'
-                  : '음성 입력 대기 중')}
+                  : micUnavailable
+                    ? '마이크 없음 · 외부 마이크를 연결하면 음성 입력을 사용할 수 있습니다'
+                    : '음성 입력 대기 중')}
               </p>
             </div>
 
@@ -446,8 +486,15 @@ export function JarvisAssistant({
           </section>
 
           <p className="jarvis-hint">
-            “헬로 자비스” 또는 박수 두 번으로 호출 · 호출 후 질문하세요
+            {micUnavailable
+              ? '외부 마이크 연결 후 다시 시도'
+              : '“헬로 자비스” 또는 박수 두 번으로 호출 · 호출 후 질문하세요'}
           </p>
+          {status === 'error' && (
+            <button type="button" className="jarvis-retry" onClick={() => void activate()}>
+              다시 시도
+            </button>
+          )}
         </main>
 
         <footer className="jarvis-footer">
