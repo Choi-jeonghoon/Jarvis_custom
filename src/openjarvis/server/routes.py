@@ -1342,6 +1342,15 @@ async def reload_cloud_engine(request: Request):
     except Exception as exc:
         return {"status": "error", "message": str(exc)}
 
+    bus = getattr(request.app.state, "bus", None)
+    if bus is not None:
+        try:
+            from openjarvis.telemetry.instrumented_engine import InstrumentedEngine
+
+            cloud = InstrumentedEngine(cloud, bus)
+        except Exception:
+            pass
+
     # Locate the innermost engine, working through InstrumentedEngine layers.
     outer = request.app.state.engine
     inner = getattr(outer, "_inner", outer)

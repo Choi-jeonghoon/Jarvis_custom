@@ -36,6 +36,7 @@ import {
   type InferenceSource,
   type MemoryStats,
 } from '../lib/api';
+import { ClaudeUsagePanel } from '../components/ClaudeUsagePanel';
 import { isAutoUpdateDisabled, setAutoUpdateDisabled } from '../components/Desktop/UpdateChecker';
 
 const CLOUD_KEY_STATUS_CHANGED = 'openjarvis-cloud-key-status-changed';
@@ -654,6 +655,11 @@ export function SettingsPage() {
                 <CloudProviderStatus label="Atlas Cloud" keyName="ATLASCLOUD_API_KEY" />
               </div>
             </SettingRow>
+          </Section>
+
+          {/* Claude AI */}
+          <Section title="Claude AI · 토큰 사용량">
+            <ClaudeUsagePanel />
           </Section>
 
           {/* API Keys */}

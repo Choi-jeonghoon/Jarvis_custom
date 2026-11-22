@@ -339,6 +339,16 @@ def serve(
         if discovered_name != engine_name:
             multi_entries.append((discovered_name, discovered_engine))
     if cloud_engine is not None:
+        # Instrument the cloud engine too so Claude/OpenAI calls land in
+        # telemetry.db (token usage view reads from there).
+        try:
+            from openjarvis.telemetry.instrumented_engine import (
+                InstrumentedEngine as _IE,
+            )
+
+            cloud_engine = _IE(cloud_engine, bus)
+        except Exception as exc:
+            logger.debug("Cloud engine instrumentation failed: %s", exc)
         multi_entries.append(("cloud", cloud_engine))
 
     if len(multi_entries) > 1:

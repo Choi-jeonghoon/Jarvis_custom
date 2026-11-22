@@ -270,6 +270,36 @@ export async function fetchSavings(): Promise<SavingsData> {
   return res.json();
 }
 
+export interface UsageBucket {
+  calls: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  cost_usd: number;
+}
+
+export interface UsageReport {
+  provider: string;
+  days: number;
+  since: number;
+  until: number;
+  totals: UsageBucket;
+  per_model: (UsageBucket & { model: string })[];
+  daily: (UsageBucket & { date: string })[];
+  first_seen: number | null;
+  last_seen: number | null;
+  error?: string;
+}
+
+export type UsageProvider = 'claude' | 'openai' | 'gemini' | 'all';
+
+/** Token usage over the last `days` days (local time), from telemetry.db. */
+export async function fetchUsage(days = 30, provider: UsageProvider = 'claude'): Promise<UsageReport> {
+  const res = await apiFetch(`/v1/telemetry/usage?days=${days}&provider=${provider}`);
+  if (!res.ok) throw new Error(`Failed to fetch usage: ${res.status}`);
+  return res.json();
+}
+
 export async function fetchServerInfo(): Promise<ServerInfo> {
   const res = await apiFetch(`/v1/info`);
   if (!res.ok) throw new Error(`Failed to fetch server info: ${res.status}`);
