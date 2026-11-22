@@ -4,6 +4,7 @@ import { LayoutGrid, Monitor, Moon, Search, Settings, Sun, User, PanelLeft } fro
 import { ApprovalBell } from '../ApprovalBell';
 import { useAppStore } from '../../lib/store';
 import { useSharedCommandCenterData } from './data';
+import { ClaudeToggle } from './ClaudeToggle';
 
 function useClock() {
   const [now, setNow] = useState(() => new Date());
@@ -53,6 +54,7 @@ export function TopBar() {
       </div>
 
       <div className="cc-topbar-right">
+        <ClaudeToggle />
         <button type="button" className="cc-search" onClick={() => setCommandPaletteOpen(true)}>
           <Search size={14} />
           <span>Search…</span>

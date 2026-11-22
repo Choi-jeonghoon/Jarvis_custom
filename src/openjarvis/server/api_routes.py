@@ -506,6 +506,140 @@ async def telemetry_stats(request: Request):
         return {"error": str(exc)}
 
 
+_USAGE_PROVIDER_PREFIXES: Dict[str, tuple[str, ...]] = {
+    "claude": ("claude-",),
+    "openai": ("gpt-", "o1-", "o3-", "o4-"),
+    "gemini": ("gemini-",),
+}
+
+
+@telemetry_router.get("/usage")
+async def telemetry_usage(
+    request: Request,
+    days: int = 30,
+    provider: str = "claude",
+):
+    """Token usage over a period: totals, per-model and per-day breakdown.
+
+    ``provider`` filters by model-id prefix (``claude`` / ``openai`` /
+    ``gemini``) or ``all``. Cost is recomputed from token counts with the
+    cloud pricing table, because streamed calls are recorded with
+    ``cost_usd = 0``. Days are bucketed in the server's local time zone.
+    """
+    import sqlite3
+    import time as _time
+    from datetime import datetime
+
+    from openjarvis.engine.cloud import estimate_cost
+
+    days = max(1, min(days, 365))
+    now = _time.time()
+    today_start = datetime.now().replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ).timestamp()
+    since = today_start - (days - 1) * 86400
+
+    empty = {
+        "provider": provider,
+        "days": days,
+        "since": since,
+        "until": now,
+        "totals": {
+            "calls": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "cost_usd": 0.0,
+        },
+        "per_model": [],
+        "daily": [],
+        "first_seen": None,
+        "last_seen": None,
+    }
+
+    db_path = _telemetry_db_path(request)
+    if not db_path.exists():
+        return empty
+
+    where = "timestamp >= ? AND is_warmup = 0"
+    params: list[Any] = [since]
+    prefixes = _USAGE_PROVIDER_PREFIXES.get(provider)
+    if prefixes:
+        where += " AND (" + " OR ".join("model_id LIKE ?" for _ in prefixes) + ")"
+        params.extend(f"{p}%" for p in prefixes)
+
+    conn = sqlite3.connect(str(db_path), check_same_thread=False)
+    try:
+        rows = conn.execute(
+            "SELECT model_id,"
+            " date(timestamp, 'unixepoch', 'localtime') AS day,"
+            " COUNT(*), SUM(prompt_tokens), SUM(completion_tokens),"
+            " SUM(total_tokens), MIN(timestamp), MAX(timestamp)"
+            f" FROM telemetry WHERE {where} GROUP BY model_id, day",
+            params,
+        ).fetchall()
+    except sqlite3.Error as exc:
+        return {**empty, "error": str(exc)}
+    finally:
+        conn.close()
+
+    per_model: Dict[str, Dict[str, Any]] = {}
+    daily: Dict[str, Dict[str, Any]] = {}
+    first_seen: Optional[float] = None
+    last_seen: Optional[float] = None
+    for model_id, day, calls, p_tok, c_tok, t_tok, t_min, t_max in rows:
+        p_tok, c_tok = int(p_tok or 0), int(c_tok or 0)
+        t_tok = int(t_tok or 0) or (p_tok + c_tok)
+        cost = estimate_cost(model_id, p_tok, c_tok)
+        for bucket in (
+            per_model.setdefault(model_id, {"model": model_id}),
+            daily.setdefault(day, {"date": day}),
+        ):
+            bucket["calls"] = bucket.get("calls", 0) + int(calls)
+            bucket["prompt_tokens"] = bucket.get("prompt_tokens", 0) + p_tok
+            bucket["completion_tokens"] = bucket.get("completion_tokens", 0) + c_tok
+            bucket["total_tokens"] = bucket.get("total_tokens", 0) + t_tok
+            bucket["cost_usd"] = bucket.get("cost_usd", 0.0) + cost
+        first_seen = t_min if first_seen is None else min(first_seen, t_min)
+        last_seen = t_max if last_seen is None else max(last_seen, t_max)
+
+    # Fill empty days so the chart has a continuous x-axis.
+    series = []
+    for i in range(days):
+        day = datetime.fromtimestamp(since + i * 86400 + 3600).strftime("%Y-%m-%d")
+        series.append(
+            daily.get(
+                day,
+                {
+                    "date": day,
+                    "calls": 0,
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0,
+                    "cost_usd": 0.0,
+                },
+            )
+        )
+
+    models_sorted = sorted(
+        per_model.values(), key=lambda m: m["total_tokens"], reverse=True
+    )
+    totals = {
+        key: sum(m[key] for m in models_sorted)
+        for key in ("calls", "prompt_tokens", "completion_tokens", "total_tokens")
+    }
+    totals["cost_usd"] = sum(m["cost_usd"] for m in models_sorted)
+
+    return {
+        **empty,
+        "totals": totals,
+        "per_model": models_sorted,
+        "daily": series,
+        "first_seen": first_seen,
+        "last_seen": last_seen,
+    }
+
+
 @telemetry_router.get("/energy")
 async def telemetry_energy(request: Request):
     """Get energy monitoring data."""

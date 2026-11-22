@@ -110,7 +110,15 @@ interface Settings {
   voiceAutoplay: boolean;
   // IANA time zone for dates in answers; '' = this device's zone.
   timeZone: string;
+  // Claude toggle: when on, chats go to `claudeModel` (Anthropic API);
+  // when off, the model that was active before is restored.
+  claudeEnabled: boolean;
+  claudeModel: string;
+  modelBeforeClaude: string;
 }
+
+export const CLAUDE_MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'] as const;
+export const isClaudeModel = (id: string) => id.startsWith('claude-');
 
 function loadSettings(): Settings {
   const defaults: Settings = {
@@ -126,6 +134,9 @@ function loadSettings(): Settings {
     voiceOutputEnabled: false,
     voiceAutoplay: false,
     timeZone: '',
+    claudeEnabled: false,
+    claudeModel: 'claude-opus-5-5',
+    modelBeforeClaude: '',
   };
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -214,6 +225,8 @@ interface AppState {
   setModels: (models: ModelInfo[]) => void;
   setModelsLoading: (loading: boolean) => void;
   setSelectedModel: (model: string) => void;
+  /** Turn the Claude toggle on/off. Returns false if Claude isn't available. */
+  setClaudeEnabled: (on: boolean) => boolean;
   setServerInfo: (info: ServerInfo | null) => void;
   setSavings: (data: SavingsData | null) => void;
   incrementSavings: (usage: TokenUsage) => void;
@@ -491,6 +504,13 @@ export const useAppStore = create<AppState>((set, get) => {
         // embedder and every chat failed with HTTP 400 "does not support
         // chat". Prefer a real chat model for selection / fallback.
         const chatModels = models.filter((m) => !isEmbedOnlyModel(m.id));
+        const { claudeEnabled, claudeModel } = state.settings;
+        const claudeAvailable =
+          claudeEnabled && models.some((m) => m.id === claudeModel);
+        // Restore the Claude selection on startup (selectedModel starts empty).
+        if (claudeAvailable && !state.selectedModel) {
+          return { models, selectedModel: claudeModel };
+        }
         const preferred =
           (state.settings.defaultModel &&
             chatModels.some((m) => m.id === state.settings.defaultModel) &&
@@ -517,6 +537,33 @@ export const useAppStore = create<AppState>((set, get) => {
       }),
     setModelsLoading: (loading: boolean) => set({ modelsLoading: loading }),
     setSelectedModel: (model: string) => set({ selectedModel: model }),
+    setClaudeEnabled: (on: boolean) => {
+      const { settings, selectedModel, models } = get();
+      if (on) {
+        if (!models.some((m) => m.id === settings.claudeModel)) return false;
+        get().updateSettings({
+          claudeEnabled: true,
+          // Remember the local model so turning Claude off restores it.
+          modelBeforeClaude: isClaudeModel(selectedModel)
+            ? settings.modelBeforeClaude
+            : selectedModel,
+        });
+        set({ selectedModel: settings.claudeModel });
+        return true;
+      }
+      const chatModels = models.filter(
+        (m) => !isEmbedOnlyModel(m.id) && !isClaudeModel(m.id),
+      );
+      const restore =
+        [settings.modelBeforeClaude, settings.defaultModel].find(
+          (id) => id && chatModels.some((m) => m.id === id),
+        ) ||
+        chatModels[0]?.id ||
+        '';
+      get().updateSettings({ claudeEnabled: false });
+      set({ selectedModel: restore });
+      return true;
+    },
     setServerInfo: (info: ServerInfo | null) => set({ serverInfo: info }),
     setSavings: (data: SavingsData | null) => set({ savings: data }),
     incrementSavings: (usage: TokenUsage) => {
