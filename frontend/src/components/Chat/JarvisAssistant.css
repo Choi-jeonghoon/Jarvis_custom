@@ -288,6 +288,22 @@
   font-size: 11px;
 }
 
+.jarvis-retry {
+  margin-top: 12px;
+  padding: 6px 16px;
+  border: 1px solid rgba(80, 200, 230, .45);
+  border-radius: 999px;
+  background: rgba(80, 200, 230, .08);
+  color: rgba(180, 235, 245, .9);
+  font-size: 12px;
+  letter-spacing: .04em;
+  cursor: pointer;
+}
+
+.jarvis-retry:hover {
+  background: rgba(80, 200, 230, .18);
+}
+
 .jarvis-footer {
   border-top: 1px solid rgba(80, 200, 230, .14);
   color: rgba(150, 210, 225, .4);

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { checkMicrophone } from '../../lib/micCheck';
 
 interface Props {
   enabled: boolean;
@@ -60,6 +61,21 @@ export function WakeAssistant({ enabled, resetKey = 0, onStatus, onWake }: Props
 
     const start = async () => {
       try {
+        // 클램쉘 모드 등으로 마이크가 무음/없음이면 대기 루프를 돌리지 않는다.
+        const mic = await checkMicrophone();
+        if (!activeRef.current) return;
+        if (!mic.ok) {
+          activeRef.current = false;
+          reportStatus(
+            mic.reason === 'denied'
+              ? '마이크 권한 차단됨 · 텍스트 입력을 사용하세요'
+              : mic.reason === 'no-device' || mic.reason === 'silent'
+                ? '마이크 없음(클램쉘 모드?) · 외부 마이크 연결 또는 텍스트 입력'
+                : '마이크 연결 실패 · 텍스트 입력을 사용하세요',
+          );
+          return;
+        }
+
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
         // EarPods 마이크가 확인되면 해당 장치를 우선 사용
