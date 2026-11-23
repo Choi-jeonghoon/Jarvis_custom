@@ -81,7 +81,58 @@ ollama pull <모델명>    # 예: ollama pull qwen3:8b
 source .venv/bin/activate
 ```
 
-## 실행
+## 도커로 실행 (추천)
+
+터미널을 매번 열 필요 없이, 도커 컨테이너로 자비스를 항상 켜 둘 수 있습니다.
+
+### 준비물
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- 맥에 설치된 [Ollama](https://ollama.com/) (컨테이너가 맥의 Ollama를 사용합니다. 도커는 맥 GPU를 쓸 수 없어서 이렇게 하는 게 훨씬 빠릅니다.)
+
+### 처음 한 번
+
+```bash
+cp .env.example .env
+# .env 파일을 열어 OPENJARVIS_API_KEY 값 채우기 (생성 명령은 파일 안에 적혀 있음)
+# Claude를 쓰려면 ANTHROPIC_API_KEY도 채우기
+
+docker compose up -d --build
+```
+
+브라우저에서 **http://localhost:8000** 으로 접속하면 됩니다.
+
+### 자동 실행 설정
+
+`docker-compose.yml`에 `restart: unless-stopped`가 설정되어 있어서, Docker Desktop이 켜지면 자비스도 자동으로 켜집니다.
+Docker Desktop의 **Settings > General > Start Docker Desktop when you sign in**을 켜 두면 맥에 로그인하기만 해도 자비스가 떠 있습니다.
+Ollama 앱도 로그인할 때 자동으로 실행되도록 해 두세요.
+
+### 자주 쓰는 명령어
+
+| 명령어 | 설명 |
+|---|---|
+| `docker compose up -d` | 실행 |
+| `docker compose up -d --build` | 코드를 수정한 뒤 이미지를 다시 빌드해서 실행 |
+| `docker compose down` | 종료 (자동 실행도 멈춤) |
+| `docker compose logs -f` | 로그 보기 |
+| `docker compose ps` | 상태 확인 |
+
+### 참고
+
+- 설정, 대화, 에이전트 데이터는 맥의 `~/.openjarvis` 폴더를 그대로 사용합니다.
+- 포트는 `127.0.0.1`에만 열려 있어서 내 맥에서만 접속할 수 있습니다.
+- 컨테이너와 `jarvis gui`는 같은 8000 포트를 쓰므로 동시에 실행할 수 없습니다. 하나만 쓰세요.
+- 컨테이너 안에서는 맥 전용 기능(Apple Calendar / Notes 연동, `clap_wake.py` 박수 호출)이 동작하지 않습니다. 음성 인식은 브라우저에서 동작하므로 그대로 사용할 수 있습니다.
+
+| 파일 | 내용 |
+|---|---|
+| `docker-compose.yml` | 개인용 컨테이너 실행 설정 |
+| `deploy/docker/Dockerfile` | 이미지 빌드 (프론트엔드 빌드 → Python/Rust 빌드 → 실행 이미지) |
+| `.env.example` | 환경변수 예시 (`.env`로 복사해서 사용, git에 올라가지 않음) |
+| `.dockerignore` | 빌드할 때 제외할 파일 |
+
+## 직접 실행 (개발할 때)
 
 ```bash
 jarvis gui

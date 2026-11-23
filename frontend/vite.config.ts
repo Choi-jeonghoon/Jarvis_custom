@@ -58,6 +58,12 @@ export default defineConfig({
             },
             { name: 'charts', test: /node_modules[\\/]recharts[\\/]/ },
             { name: 'router', test: /node_modules[\\/]react-router[\\/]/ },
+            // Jarvis 3D reactor: keeps three.js out of the main chunk so it
+            // stays under workbox's 2 MiB precache limit.
+            {
+              name: 'three',
+              test: /node_modules[\\/](three|three-stdlib|@react-three|troika-[^\\/]+|camera-controls|maath|meshline|stats-gl)[\\/]/,
+            },
           ],
         },
       },

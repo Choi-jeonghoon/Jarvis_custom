@@ -1,0 +1,47 @@
+# 개인용 실행 설정 (macOS + Docker Desktop)
+#
+#   docker compose up -d --build   # 처음 또는 코드 수정 후 (이미지 빌드 + 실행)
+#   docker compose up -d           # 그냥 실행
+#   docker compose down            # 종료
+#
+# 브라우저에서 http://localhost:8000 으로 접속하세요.
+#
+# - 모델은 컨테이너 안이 아니라 맥에 설치된 Ollama를 사용합니다.
+#   (Docker on macOS는 GPU(Metal)를 못 쓰기 때문에, 맥의 Ollama가 훨씬 빠릅니다.)
+# - restart: unless-stopped 이라서 Docker Desktop이 켜지면 자동으로 같이 켜집니다.
+#   Docker Desktop > Settings > General > "Start Docker Desktop when you sign in" 을 켜 두면
+#   맥 로그인만 해도 자비스가 떠 있습니다.
+
+# Docker Desktop에 표시되는 프로젝트 이름 (지정하지 않으면 폴더 이름인 "src"로 표시됨)
+name: jarvis-custom
+
+services:
+  jarvis:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile
+      args:
+        VITE_OPENJARVIS_API_KEY: ${OPENJARVIS_API_KEY:?.env 파일에 OPENJARVIS_API_KEY를 설정하세요 (.env.example 참고)}
+    image: jarvis-custom:latest
+    container_name: jarvis-custom
+    ports:
+      # 내 맥에서만 접속 가능 (같은 와이파이의 다른 기기에서는 접속 불가)
+      - "127.0.0.1:8000:8000"
+    environment:
+      - OPENJARVIS_API_KEY=${OPENJARVIS_API_KEY}
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - TZ=Asia/Seoul
+    volumes:
+      # 기존 설정/대화/에이전트/지식베이스 데이터를 그대로 사용
+      - ${HOME}/.openjarvis:/home/openjarvis/.openjarvis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
