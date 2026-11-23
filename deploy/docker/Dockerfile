@@ -7,13 +7,19 @@ FROM node:22.23.0-slim@sha256:d9f850096136edbc402debdd8729579a288aac64574ada0ff4
 # Public Supabase anon key for the savings leaderboard; empty by default so
 # the image's leaderboard stays disabled (#589). Pass --build-arg to enable.
 ARG OPENJARVIS_LEADERBOARD_PUBLIC_ANON=
+# Optional: bake the server API key into the UI so a container bound to
+# 0.0.0.0 works without typing the key into Settings. Only use this when the
+# published port is limited to 127.0.0.1 (see the root docker-compose.yml).
+ARG VITE_OPENJARVIS_API_KEY=
 
 WORKDIR /frontend
 COPY frontend/package.json frontend/package-lock.json frontend/.npmrc ./
 RUN npm install --global "$(node -p 'require("./package.json").packageManager')" && \
     npm ci --ignore-scripts
 COPY frontend/ .
-RUN VITE_SUPABASE_ANON_KEY="${OPENJARVIS_LEADERBOARD_PUBLIC_ANON}" npm run build
+RUN VITE_SUPABASE_ANON_KEY="${OPENJARVIS_LEADERBOARD_PUBLIC_ANON}" \
+    VITE_OPENJARVIS_API_KEY="${VITE_OPENJARVIS_API_KEY}" \
+    npm run build
 
 # Stage 2: Build Python package
 FROM python:3.12.16-slim-bookworm@sha256:935c3c5b12357a7e10caa9c1e6ca5692344d97cf229832ef584be2cec9fc03df AS builder

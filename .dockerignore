@@ -1,0 +1,25 @@
+# Keep host-only and heavy directories out of the Docker build context.
+# Host node_modules contains macOS binaries and would overwrite the
+# container's `npm ci` result when the Dockerfile runs `COPY frontend/ .`.
+.git
+.github
+.idea
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+frontend/node_modules
+frontend/dist
+frontend/tsconfig.tsbuildinfo
+src/openjarvis/server/static
+desktop/node_modules
+desktop/src-tauri/target
+rust/target
+
+.env
+.env.*
+!.env.example
+**/.DS_Store
