@@ -24,7 +24,7 @@
   <img alt="JARVIS Command Center 화면" src="docs/images/openjarvis-design.png" width="90%">
   <p><sub>JARVIS Command Center: <code>jarvis gui</code> 실행 화면</sub></p>
 </div>
-~~~~
+
 ## 소개
 
 OpenJarvis는 로컬 기기에서 먼저 동작하고 필요할 때만 클라우드를 쓰는 개인용 AI 에이전트 프레임워크입니다.
