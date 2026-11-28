@@ -21,9 +21,22 @@
 > 원본 프로젝트의 정보는 아래 [출처](#출처)를 참고하세요.
 
 <div align="center">
-  <img alt="JARVIS Command Center 화면" src="docs/images/openjarvis-design.png" width="90%">
-  <p><sub>JARVIS Command Center: <code>jarvis gui</code> 실행 화면</sub></p>
+  <img alt="금색 홀로그램 구체 위에 자비스의 답변이 한 문장씩 자막으로 떠 있는 메인 화면" src="docs/images/jarvis-main.jpg" width="90%">
+  <p><sub>메인 화면: 자비스가 답변을 한 문장씩 말하면서 구체 위에 자막으로 띄웁니다</sub></p>
 </div>
+
+<table align="center">
+  <tr>
+    <td align="center" width="50%">
+      <img alt="질문을 처리하는 동안 주황색으로 바뀌어 숨쉬듯 움직이는 구체" src="docs/images/jarvis-thinking.jpg">
+      <sub>생각 중: 구체가 주황색으로 바뀌어 숨쉬듯 움직입니다</sub>
+    </td>
+    <td align="center" width="50%">
+      <img alt="구체 위에 반투명한 대화창으로 전체 답변이 표시된 화면" src="docs/images/jarvis-panel.jpg">
+      <sub>대화창: 전체 답변을 보고, 배경 투명도를 조절합니다</sub>
+    </td>
+  </tr>
+</table>
 
 ## 소개
 
@@ -34,7 +47,9 @@ OpenJarvis는 로컬 기기에서 먼저 동작하고 필요할 때만 클라우
 
 | 영역 | 내용 | 주요 파일 |
 |---|---|---|
-| 자비스 HUD UI | 3D 리액터와 HUD 스타일의 메인 화면, 커맨드 센터 | `frontend/src/components/Chat/JarvisReactor3D.tsx`, `frontend/src/components/CommandCenter/` |
+| 홀로그램 구체 | 에너지 코어, 내부 패널, 물결 띠, 흐르는 빛으로 만든 금색 구체. 대기 금색 / 듣기 샴페인 / 생각 주황(숨쉬기) / 답변 금색 | `frontend/src/components/Chat/GoldOrb3D.tsx` |
+| 대화창과 자막 | 답변을 대화창(켜기·끄기, 배경 투명도 조절) 또는 한 문장씩 뜨는 자막으로 표시 | `frontend/src/components/Chat/JarvisStage.tsx`, `frontend/src/lib/captions.ts` |
+| 화면 구성 | 금색 톤 통일, 대시보드 패널은 사이드바 "시스템 현황" 모달로, 아이패드에서는 사이드바가 서랍 메뉴 | `frontend/src/components/CommandCenter/`, `frontend/src/components/Sidebar/` |
 | 음성 대화 | "헬로 자비스" → 영어 인사("Welcome back, sir") → 질문하면 현재 화면에 글로 표시하면서 음성으로 답변 (팝업 없음) | `frontend/src/components/Chat/VoiceConversation.tsx`, `frontend/src/lib/voice.ts` |
 | 자비스 목소리 | 무료 Microsoft Edge 뉴럴 음성. 답변은 한국어 남성 "InJoon", 인사는 영국 남성 "Ryan" (키 불필요, 인터넷 필요). 서버 음성이 안 되면 맥 음성으로 대체 | `src/openjarvis/speech/edge_tts_backend.py`, `~/.openjarvis/config.toml`의 `[speech]`, 설정 → Speech |
 | 마이크 상태 표시 | 마이크 연결 문제를 감지해서 표시 | `frontend/src/lib/micCheck.ts` |
