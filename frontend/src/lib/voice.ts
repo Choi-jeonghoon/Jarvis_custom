@@ -215,7 +215,7 @@ function playBlob(blob: Blob, token: number): Promise<void> {
 export async function speakCaptions(
   captions: string[],
   voiceName: string,
-  onCaption: (index: number) => void,
+  onCaption?: (index: number) => void,
 ): Promise<void> {
   cancelSequence();
   const token = seqToken;
@@ -233,7 +233,7 @@ export async function speakCaptions(
     next = server && i + 1 < captions.length ? fetchAudio(captions[i + 1]) : null;
     const blob = current ? await current : null;
     if (token !== seqToken) return;
-    onCaption(i);
+    onCaption?.(i);
     if (blob) await playBlob(blob, token);
     else await speakWithBrowser(captions[i], voiceName, 'ko-KR');
   }

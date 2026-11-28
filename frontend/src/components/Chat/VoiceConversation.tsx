@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useAppStore } from '../../lib/store';
 import { useTtsStore } from '../../lib/tts';
 import { checkMicrophone } from '../../lib/micCheck';
-import { splitCaptions, useCaptionStore } from '../../lib/captions';
+import { splitCaptions } from '../../lib/captions';
 import {
   installAudioUnlock,
   speakCaptions,
@@ -257,16 +257,10 @@ export function VoiceConversation({ sendMessage }: Props) {
       const last = messages[messages.length - 1];
       if (last?.role === 'assistant') useTtsStore.getState().markAutoSpoken(last.id);
 
-      // Speak sentence by sentence; the stage shows each one as it is heard.
-      const captions = splitCaptions(reply);
-      const captionStore = useCaptionStore.getState();
-      captionStore.load(captions, 'voice');
+      // Speak sentence by sentence so the first one starts right away.
       report('speaking', '답변을 읽고 있습니다');
-      await speakCaptions(captions, useAppStore.getState().settings.voiceName, (i) =>
-        useCaptionStore.getState().show(i, 'voice'),
-      );
+      await speakCaptions(splitCaptions(reply), useAppStore.getState().settings.voiceName);
       if (!alive) return;
-      useCaptionStore.getState().show(captions.length - 1, 'idle');
       listenForQuestion(FOLLOW_UP_TIMEOUT_MS, '이어서 질문하실 수 있습니다');
     };
 

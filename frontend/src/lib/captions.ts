@@ -1,9 +1,8 @@
-import { create } from 'zustand';
 import { stripThinkTags, toSpeakableText } from './message-text';
 
 /**
- * Captions: the answer as JARVIS "says" it — one sentence at a time, shown
- * over the orb and spoken in step with it.
+ * Split an answer into sentences so JARVIS can speak it one sentence at a
+ * time (the first one starts playing while the rest are still synthesized).
  */
 
 const MAX_CAPTION = 90;
@@ -46,36 +45,3 @@ export function splitCaptions(text: string): string[] {
   }
   return captions;
 }
-
-export function captionKey(captions: string[]): string {
-  return captions.join('\n');
-}
-
-/** How long a caption stays up when nobody is speaking it. */
-export function readingMs(caption: string): number {
-  return Math.round(Math.min(9000, Math.max(2200, caption.length * 110)));
-}
-
-export type CaptionMode = 'idle' | 'auto' | 'voice' | 'manual';
-
-interface CaptionStore {
-  key: string;
-  captions: string[];
-  index: number;
-  mode: CaptionMode;
-  load: (captions: string[], mode: CaptionMode) => void;
-  show: (index: number, mode?: CaptionMode) => void;
-}
-
-export const useCaptionStore = create<CaptionStore>((set) => ({
-  key: '',
-  captions: [],
-  index: 0,
-  mode: 'idle',
-  load: (captions, mode) => set({ key: captionKey(captions), captions, index: 0, mode }),
-  show: (index, mode) =>
-    set((s) => ({
-      index: Math.max(0, Math.min(index, s.captions.length - 1)),
-      mode: mode ?? s.mode,
-    })),
-}));

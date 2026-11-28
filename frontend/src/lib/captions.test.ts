@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { captionKey, readingMs, splitCaptions } from './captions';
+import { splitCaptions } from './captions';
 
 describe('splitCaptions', () => {
   it('splits prose into sentences', () => {
@@ -36,19 +36,5 @@ describe('splitCaptions', () => {
 
   it('drops think blocks and empty lines', () => {
     expect(splitCaptions('<think>계획</think>\n\n좋아요.')).toEqual(['좋아요.']);
-  });
-});
-
-describe('captionKey', () => {
-  it('is equal for the same content regardless of markdown noise', () => {
-    expect(captionKey(splitCaptions('**좋아요.**'))).toBe(captionKey(splitCaptions('좋아요.')));
-  });
-});
-
-describe('readingMs', () => {
-  it('scales with length within bounds', () => {
-    expect(readingMs('짧음')).toBe(2200);
-    expect(readingMs('가'.repeat(200))).toBe(9000);
-    expect(readingMs('가'.repeat(40))).toBeGreaterThan(2200);
   });
 });
