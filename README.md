@@ -20,6 +20,12 @@
 > Stanford Hazy Research / Scaling Intelligence Lab에서 만든 [OpenJarvis](https://github.com/open-jarvis/OpenJarvis)를 가져와 개인적으로 수정한 포크입니다.
 > 원본 프로젝트의 정보는 아래 [출처](#출처)를 참고하세요.
 
+> [!IMPORTANT]
+> **이용 안내**
+> - 이 커스텀 버전을 쓰려면 이 저장소를 클론하세요: `https://github.com/Choi-jeonghoon/Jarvis_custom.git`
+> - **로컬 LLM(Ollama 등)의 설치와 모델 설정은 원본 [OpenJarvis 공식 문서](https://open-jarvis.github.io/OpenJarvis/)를 보고 직접 진행해 주세요.** 이 저장소는 로컬 LLM 설정을 따로 안내하거나 지원하지 않습니다.
+> - 이 저장소의 코드나 디자인을 가져다 쓸 때는 **출처(이 저장소 주소)를 꼭 표기해 주세요.** 원본 OpenJarvis의 출처와 라이선스 표기도 함께 유지해야 합니다. 자세한 내용은 [출처](#출처)를 참고하세요.
+
 <div align="center">
   <img alt="금색 홀로그램 구체 위에 자비스의 답변이 한 문장씩 자막으로 떠 있는 메인 화면" src="docs/images/jarvis-main.jpg" width="90%">
   <p><sub>메인 화면: 자비스가 답변을 한 문장씩 말하면서 구체 위에 자막으로 띄웁니다</sub></p>
@@ -65,7 +71,7 @@ OpenJarvis는 로컬 기기에서 먼저 동작하고 필요할 때만 클라우
 | Python | 3.11 ~ 3.13 | |
 | [uv](https://docs.astral.sh/uv/) | 최신 | Python 패키지/가상환경 관리 |
 | Node.js / npm | 22 이상 | GUI 프론트엔드 실행에 필요 |
-| [Ollama](https://ollama.com/) | 최신 | 로컬 모델 실행 (선택, 로컬 모델을 쓸 때) |
+| [Ollama](https://ollama.com/) | 최신 | 로컬 모델 실행 (선택). 설치와 모델 설정은 [원본 공식 문서](https://open-jarvis.github.io/OpenJarvis/)를 따라 직접 진행 |
 | Rust | 최신 | Rust 확장을 직접 빌드할 때만 필요 (선택) |
 
 macOS 기준 설치 예시:
@@ -77,8 +83,8 @@ brew install uv node ollama
 ### 설치 순서
 
 ```bash
-# 1. 저장소 받기
-git clone https://github.com/Choi-jeonghoon/AI-.git openjarvis
+# 1. 저장소 받기 (이 커스텀 버전)
+git clone https://github.com/Choi-jeonghoon/Jarvis_custom.git openjarvis
 cd openjarvis
 
 # 2. Python 의존성 설치 (GUI용 desktop 의존성 포함)
@@ -86,10 +92,9 @@ uv sync --extra desktop --extra server
 
 # 3. 프론트엔드 의존성 설치 (안 해도 jarvis gui가 처음 실행할 때 자동으로 설치함)
 cd frontend && npm install && cd ..
-
-# 4. (선택) 로컬 모델 받기
-ollama pull <모델명>    # 예: ollama pull qwen3:8b
 ```
+
+로컬 LLM을 쓰려면 Ollama 설치와 모델 준비를 [원본 OpenJarvis 공식 문서](https://open-jarvis.github.io/OpenJarvis/)를 보고 직접 진행해 주세요.
 
 `jarvis` 명령어를 바로 쓰려면 가상환경을 켜 두세요. 켜지 않았다면 명령어 앞에 `uv run`을 붙이면 됩니다.
 
@@ -104,7 +109,7 @@ source .venv/bin/activate
 ### 준비물
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- 맥에 설치된 [Ollama](https://ollama.com/) (컨테이너가 맥의 Ollama를 사용합니다. 도커는 맥 GPU를 쓸 수 없어서 이렇게 하는 게 훨씬 빠릅니다.)
+- 맥에 설치된 [Ollama](https://ollama.com/) (컨테이너가 맥의 Ollama를 사용합니다. 도커는 맥 GPU를 쓸 수 없어서 이렇게 하는 게 훨씬 빠릅니다.) 설치와 모델 설정은 [원본 공식 문서](https://open-jarvis.github.io/OpenJarvis/)를 따라 직접 진행해 주세요.
 
 ### 처음 한 번
 
@@ -236,6 +241,18 @@ git merge upstream/main
 - **논문:** [arXiv:2605.17172](https://arxiv.org/abs/2605.17172)
 
 원본 프로젝트의 기능(스킬, 기본 에이전트, 프리셋 등)에 대한 자세한 설명은 [공식 문서](https://open-jarvis.github.io/OpenJarvis/)를 참고하세요.
+
+### 이 커스텀 버전을 가져다 쓸 때
+
+이 저장소의 코드나 디자인(음성 대화, 홀로그램 구체, 대화창 등)을 사용하거나 수정해서 쓸 때는 출처를 표기해 주세요.
+원본 OpenJarvis의 출처와 [라이선스](#라이선스) 표기도 함께 유지해야 합니다.
+
+표기 예시:
+
+```text
+이 프로젝트는 JARVIS 커스텀 버전(https://github.com/Choi-jeonghoon/Jarvis_custom)을 기반으로 합니다.
+원본: OpenJarvis (https://github.com/open-jarvis/OpenJarvis), Apache License 2.0
+```
 
 ### 인용
 
