@@ -118,6 +118,8 @@ interface Settings {
   // (floating one-sentence captions), and its background opacity 0–1.
   answerPanel: boolean;
   answerPanelOpacity: number;
+  // Read the answer aloud for typed questions too (voice questions always are).
+  speakTypedReplies: boolean;
   // IANA time zone for dates in answers; '' = this device's zone.
   timeZone: string;
   // Claude toggle: when on, chats go to `claudeModel` (Anthropic API);
@@ -147,6 +149,7 @@ function loadSettings(): Settings {
     greetingVoice: 'en-GB-RyanNeural',
     answerPanel: true,
     answerPanelOpacity: 0.6,
+    speakTypedReplies: true,
     timeZone: '',
     claudeEnabled: false,
     claudeModel: 'claude-opus-5-5',

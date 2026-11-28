@@ -887,6 +887,24 @@ export function SettingsPage() {
                 </span>
               </div>
             </SettingRow>
+            <SettingRow label="글로 물어봐도 음성으로 답하기" description="입력창에 쓴 질문의 답변도 자비스가 소리 내어 읽어 줍니다">
+              <button
+                role="switch"
+                aria-checked={settings.speakTypedReplies}
+                aria-label="글로 물어봐도 음성으로 답하기"
+                onClick={() => { updateSettings({ speakTypedReplies: !settings.speakTypedReplies }); showSaved(); }}
+                className="relative w-11 h-6 rounded-full transition-colors cursor-pointer"
+                style={{ background: settings.speakTypedReplies ? 'var(--color-accent)' : 'var(--color-bg-tertiary)' }}
+              >
+                <span
+                  className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full transition-transform bg-white"
+                  style={{
+                    transform: settings.speakTypedReplies ? 'translateX(20px)' : 'translateX(0)',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  }}
+                />
+              </button>
+            </SettingRow>
             <SettingRow
               label="자비스 목소리"
               description={ttsBackend?.available

@@ -23,13 +23,16 @@ interface VoiceStore {
   status: string;
   /** Interim transcript of what the user is saying right now. */
   heard: string;
-  set: (patch: Partial<Pick<VoiceStore, 'phase' | 'status' | 'heard'>>) => void;
+  /** JARVIS is reading an answer aloud (voice or typed question). */
+  talking: boolean;
+  set: (patch: Partial<Pick<VoiceStore, 'phase' | 'status' | 'heard' | 'talking'>>) => void;
 }
 
 export const useVoiceStore = create<VoiceStore>((set) => ({
   phase: 'off',
   status: '',
   heard: '',
+  talking: false,
   set: (patch) => set(patch),
 }));
 
@@ -173,6 +176,7 @@ let seqAborts: AbortController[] = [];
 
 function cancelSequence() {
   seqToken += 1;
+  useVoiceStore.getState().set({ talking: false });
   seqAborts.forEach((a) => a.abort());
   seqAborts = [];
   if (seqAudio) {
@@ -220,7 +224,20 @@ export async function speakCaptions(
   cancelSequence();
   const token = seqToken;
   if (!captions.length) return;
+  useVoiceStore.getState().set({ talking: true });
+  try {
+    await speakSequence(captions, voiceName, token, onCaption);
+  } finally {
+    if (token === seqToken) useVoiceStore.getState().set({ talking: false });
+  }
+}
 
+async function speakSequence(
+  captions: string[],
+  voiceName: string,
+  token: number,
+  onCaption?: (index: number) => void,
+): Promise<void> {
   const tts = useTtsStore.getState();
   await tts.ensureHealth();
   if (token !== seqToken) return;

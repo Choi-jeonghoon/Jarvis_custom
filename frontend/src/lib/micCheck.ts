@@ -1,8 +1,13 @@
 export type MicCheckResult =
-  | { ok: true; deviceLabel: string }
+  /**
+   * `silent`: the device opened but sent no sound during the check. Not a
+   * failure: digital mics (USB EarPods, …) send exact zeros in a quiet room.
+   * Only worth a warning when it is the built-in mic (lid closed = it's off).
+   */
+  | { ok: true; deviceLabel: string; silent?: boolean }
   | {
       ok: false;
-      reason: 'unsupported' | 'denied' | 'no-device' | 'silent' | 'unknown';
+      reason: 'unsupported' | 'denied' | 'system-denied' | 'no-device' | 'unknown';
       message: string;
     };
 
@@ -26,6 +31,16 @@ export async function checkMicrophone(sampleMs = 1200): Promise<MicCheckResult> 
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch (err) {
     const name = err instanceof DOMException ? err.name : '';
+    // Chrome says "Permission denied by system" when the site is allowed but
+    // macOS itself blocks the browser (System Settings → Privacy → Microphone).
+    // That permission is often reset by macOS or browser updates.
+    if (name === 'NotAllowedError' && /system/i.test((err as DOMException).message)) {
+      return {
+        ok: false,
+        reason: 'system-denied',
+        message: 'macOS가 브라우저의 마이크 사용을 막고 있습니다. 시스템 설정 → 개인정보 보호 및 보안 → 마이크에서 사용 중인 브라우저를 켜 주세요.',
+      };
+    }
     if (name === 'NotAllowedError' || name === 'SecurityError') {
       return {
         ok: false,
@@ -67,14 +82,7 @@ export async function checkMicrophone(sampleMs = 1200): Promise<MicCheckResult> 
     // AudioContext가 일시정지 상태라 측정을 못 했다면 판단을 보류하고 통과시킨다.
     if (audioContext.state !== 'running') return { ok: true, deviceLabel };
 
-    if (peak <= 0.0001) {
-      return {
-        ok: false,
-        reason: 'silent',
-        message: `마이크(${deviceLabel || '기본 입력'})에서 소리가 전혀 들어오지 않습니다. ${CLAMSHELL_HINT}`,
-      };
-    }
-    return { ok: true, deviceLabel };
+    return { ok: true, deviceLabel, silent: peak <= 0.0001 };
   } finally {
     stream.getTracks().forEach((t) => t.stop());
     void audioContext?.close();

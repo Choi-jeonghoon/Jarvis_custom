@@ -38,6 +38,7 @@ export function ChatArea() {
 
   const voicePhase = useVoiceStore((s) => s.phase);
   const voiceHeard = useVoiceStore((s) => s.heard);
+  const voiceTalking = useVoiceStore((s) => s.talking);
   const historyOpen = useModalStore((s) => s.historyOpen);
   const setHistoryOpen = useModalStore((s) => s.setHistoryOpen);
 
@@ -61,7 +62,7 @@ export function ChatArea() {
   const orbStatus: OrbStatus =
     isCurrentChatStreaming || voicePhase === 'thinking'
       ? 'thinking'
-      : ttsState === 'speaking' || voicePhase === 'speaking' || voicePhase === 'greeting'
+      : ttsState === 'speaking' || voiceTalking || voicePhase === 'speaking' || voicePhase === 'greeting'
         ? 'speaking'
         : voicePhase === 'listening'
           ? 'listening'

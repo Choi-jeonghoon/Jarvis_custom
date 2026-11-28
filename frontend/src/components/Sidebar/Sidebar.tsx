@@ -57,6 +57,7 @@ export function Sidebar() {
   const speechEnabled = useAppStore((s) => s.settings.speechEnabled);
   const isStreaming = useAppStore((s) => s.streamState.isStreaming);
   const voicePhase = useVoiceStore((s) => s.phase);
+  const voiceStatus = useVoiceStore((s) => s.status);
 
   const { agents, connectors } = useSharedCommandCenterData();
   const runningAgents = agents?.filter((a) => a.status === 'running').length ?? 0;
@@ -187,7 +188,13 @@ export function Sidebar() {
           <span className="cc-voice-row-icon" aria-hidden="true"><Mic size={18} /></span>
           <span className="cc-voice-row-text">
             <b>말로 물어보기</b>
-            <small>{speechEnabled ? PHASE_TEXT[voicePhase] : PHASE_TEXT.off}</small>
+            <small title={voicePhase === 'unavailable' ? voiceStatus : undefined}>
+              {!speechEnabled
+                ? PHASE_TEXT.off
+                : voicePhase === 'unavailable' && voiceStatus
+                  ? voiceStatus.split(' · ')[0]
+                  : PHASE_TEXT[voicePhase]}
+            </small>
           </span>
         </button>
       </div>

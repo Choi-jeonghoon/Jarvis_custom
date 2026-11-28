@@ -7,7 +7,8 @@ import { useTtsStore } from '../../lib/tts';
 import { streamChat, streamResearch } from '../../lib/sse';
 import { fetchSavings, getBase, authHeaders } from '../../lib/api';
 import { listConnectors, getSyncStatus } from '../../lib/connectors-api';
-import { useVoiceStore } from '../../lib/voice';
+import { speakCaptions, stopSpeaking, useVoiceStore } from '../../lib/voice';
+import { splitCaptions } from '../../lib/captions';
 import { serializeToolCallArguments } from '../../lib/tool-call';
 import {
   engineFromCompletionChunk,
@@ -528,10 +529,24 @@ export function InputArea() {
     maxTokens,
   ]);
 
+  // Typed question: send it, then read the answer aloud too (voice questions
+  // are spoken by VoiceConversation, which calls sendMessage directly).
+  const sendTyped = async () => {
+    stopSpeaking();
+    const reply = await sendMessage();
+    const { settings } = useAppStore.getState();
+    if (!reply?.trim() || !settings.speakTypedReplies) return;
+    // Keep the chat's own autoplay from reading the same reply a second time.
+    const { messages: all } = useAppStore.getState();
+    const last = all[all.length - 1];
+    if (last?.role === 'assistant') useTtsStore.getState().markAutoSpoken(last.id);
+    await speakCaptions(splitCaptions(reply), settings.voiceName);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      void sendTyped();
     }
   };
 
@@ -563,7 +578,7 @@ export function InputArea() {
             </button>
           ) : (
             <button
-              onClick={() => void sendMessage()}
+              onClick={() => void sendTyped()}
               disabled={!input.trim() || modelLoading || !selectedModel}
               className="jarvis-command-send"
               title={selectedModel ? '전송' : '모델을 선택하세요'}

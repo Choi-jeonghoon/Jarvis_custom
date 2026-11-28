@@ -92,6 +92,10 @@ export function VoiceConversation({ sendMessage }: Props) {
 
     let alive = true;
     let mode: Mode = 'busy';
+    // Which mic the browser gave us, shown in the status so a wrong default
+    // device is obvious. Chrome's speech recognition uses this same default.
+    let micLabel = '';
+    let micWarning = '';
     let recognition: any = null;
     let restartTimer = 0;
     let silenceTimer = 0;
@@ -140,9 +144,10 @@ export function VoiceConversation({ sendMessage }: Props) {
         if (recognition !== r) return;
         if (event.error === 'no-speech' || event.error === 'aborted') return;
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-          fail('마이크 권한이 차단되었습니다 · 브라우저 설정에서 허용해 주세요');
+          // The speech service gives no detail, so name both places to check.
+          fail('마이크 권한이 막혀 있어요 · 주소창 왼쪽 아이콘과 시스템 설정 → 개인정보 보호 및 보안 → 마이크를 확인해 주세요');
         } else if (event.error === 'audio-capture') {
-          fail('마이크를 찾을 수 없습니다 · 외부 마이크를 연결해 주세요');
+          fail(`마이크 소리를 받을 수 없어요${micLabel ? ` (${micLabel})` : ''} · 연결을 확인해 주세요`);
         } else if (event.error === 'network') {
           store.set({ status: '음성 인식 서버 연결 실패 · 다시 시도 중…' });
         }
@@ -173,7 +178,10 @@ export function VoiceConversation({ sendMessage }: Props) {
       clearTimers();
       mode = 'wake';
       store.set({ heard: '' });
-      report('wake', '"헬로 자비스" 라고 불러 주세요 · 박수 두 번도 가능');
+      report(
+        'wake',
+        micWarning || `"헬로 자비스" 라고 불러 주세요${micLabel ? ` · ${micLabel}` : ''}`,
+      );
       startRecognition();
     };
 
@@ -200,6 +208,7 @@ export function VoiceConversation({ sendMessage }: Props) {
     const greet = async () => {
       if (!alive || mode === 'busy') return;
       mode = 'busy';
+      stopSpeaking(); // "헬로 자비스" interrupts a reply being read aloud
       clearTimers();
       stopRecognition(); // never let JARVIS hear itself
       if (!isAudioUnlocked()) {
@@ -220,6 +229,7 @@ export function VoiceConversation({ sendMessage }: Props) {
     const answer = async (question: string) => {
       if (!alive) return;
       mode = 'busy';
+      stopSpeaking();
       clearTimers();
       stopRecognition();
       store.set({ heard: question });
@@ -363,13 +373,23 @@ export function VoiceConversation({ sendMessage }: Props) {
       if (!alive) return;
       if (!mic.ok) {
         fail(
-          mic.reason === 'denied'
-            ? '마이크 권한 차단됨 · 텍스트 입력을 사용하세요'
-            : mic.reason === 'no-device' || mic.reason === 'silent'
-              ? '마이크 없음(클램쉘 모드?) · 외부 마이크를 연결해 주세요'
-              : '마이크 연결 실패 · 텍스트 입력을 사용하세요',
+          mic.reason === 'system-denied'
+            ? 'macOS가 마이크를 막고 있어요 · 시스템 설정 → 개인정보 보호 및 보안 → 마이크에서 브라우저를 켜 주세요'
+            : mic.reason === 'denied'
+            ? '마이크 권한이 막혀 있어요 · 주소창 왼쪽 아이콘에서 마이크를 허용해 주세요'
+            : mic.reason === 'no-device'
+              ? '연결된 마이크를 찾지 못했어요 · 마이크를 연결해 주세요'
+              : mic.reason === 'unsupported'
+                ? '이 주소에서는 마이크를 쓸 수 없어요 · localhost 또는 https로 접속해 주세요'
+                : '마이크를 시작하지 못했어요 · 새로고침해 주세요',
         );
         return;
+      }
+      micLabel = mic.deviceLabel.replace(/\s*\(.*\)\s*$/, '');
+      // A quiet digital mic is fine. A quiet *built-in* mic usually means the
+      // lid is closed (it's switched off) and another mic should be picked.
+      if (mic.silent && /macbook|built-?in|내장/i.test(mic.deviceLabel)) {
+        micWarning = `${micLabel}에서 소리가 안 들려요 · 덮개를 닫았다면 크롬 마이크 설정에서 다른 마이크를 고르세요`;
       }
       void startClapDetection();
       backToWake();
