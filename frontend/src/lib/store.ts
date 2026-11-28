@@ -108,6 +108,16 @@ interface Settings {
   speechEnabled: boolean;
   voiceOutputEnabled: boolean;
   voiceAutoplay: boolean;
+  // Browser voice for spoken replies when no server TTS is configured.
+  // '' = pick the best male Korean system voice automatically.
+  voiceName: string;
+  // Voice for the wake greeting: an English Edge voice ID, or 'ko' for a
+  // Korean greeting in the normal reply voice.
+  greetingVoice: string;
+  // Answer panel over the orb: shown (full formatted answer) or hidden
+  // (floating one-sentence captions), and its background opacity 0–1.
+  answerPanel: boolean;
+  answerPanelOpacity: number;
   // IANA time zone for dates in answers; '' = this device's zone.
   timeZone: string;
   // Claude toggle: when on, chats go to `claudeModel` (Anthropic API);
@@ -130,9 +140,13 @@ function loadSettings(): Settings {
     defaultAgent: '',
     temperature: 0.7,
     maxTokens: 4096,
-    speechEnabled: false,
+    speechEnabled: true,
     voiceOutputEnabled: false,
     voiceAutoplay: false,
+    voiceName: '',
+    greetingVoice: 'en-GB-RyanNeural',
+    answerPanel: true,
+    answerPanelOpacity: 0.6,
     timeZone: '',
     claudeEnabled: false,
     claudeModel: 'claude-opus-5-5',
@@ -141,7 +155,14 @@ function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return defaults;
-    return { ...defaults, ...JSON.parse(raw) };
+    const stored = JSON.parse(raw);
+    // One-time migration: settings saved before the hands-free "헬로 자비스"
+    // flow existed had the wake word off by default; turn it on once.
+    if (stored && typeof stored === 'object' && !('voiceName' in stored)) {
+      stored.speechEnabled = true;
+      stored.voiceName = '';
+    }
+    return { ...defaults, ...stored };
   } catch {
     return defaults;
   }
@@ -305,7 +326,7 @@ export const useAppStore = create<AppState>((set, get) => {
     settings: loadSettings(),
 
     commandPaletteOpen: false,
-    sidebarOpen: typeof window !== 'undefined' && window.innerWidth >= 1024,
+    sidebarOpen: typeof window !== 'undefined' && window.innerWidth >= 1280,
     systemPanelOpen: false,
 
     optInEnabled: localStorage.getItem(OPTIN_KEY) === 'true',

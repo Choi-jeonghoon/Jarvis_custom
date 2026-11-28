@@ -1,5 +1,4 @@
-import { WakeAssistant } from './WakeAssistant';
-import { JarvisAssistant } from './JarvisAssistant';
+import { VoiceConversation } from './VoiceConversation';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Send, Square, Search } from 'lucide-react';
 import { toast } from 'sonner';
@@ -8,7 +7,7 @@ import { useTtsStore } from '../../lib/tts';
 import { streamChat, streamResearch } from '../../lib/sse';
 import { fetchSavings, getBase, authHeaders } from '../../lib/api';
 import { listConnectors, getSyncStatus } from '../../lib/connectors-api';
-import { OPEN_VOICE_EVENT } from '../CommandCenter/data';
+import { useVoiceStore } from '../../lib/voice';
 import { serializeToolCallArguments } from '../../lib/tool-call';
 import {
   engineFromCompletionChunk,
@@ -83,11 +82,9 @@ function useResearchCorpusSync(enabled: boolean): {
 
 export function InputArea() {
   const [input, setInput] = useState('');
-  const [jarvisOpen, setJarvisOpen] = useState(false);
-  const [jarvisAutoStart, setJarvisAutoStart] = useState(false);
-  const [wakeResetKey, setWakeResetKey] = useState(0);
-  const [wakeQuery, setWakeQuery] = useState('');
-  const [wakeStatus, setWakeStatus] = useState('호출어 대기 중');
+  const voicePhase = useVoiceStore((s) => s.phase);
+  const voiceStatus = useVoiceStore((s) => s.status);
+  const voiceHeard = useVoiceStore((s) => s.heard);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -126,17 +123,6 @@ export function InputArea() {
     prevModelRef.current = selectedModel;
   }, [selectedModel, streamState.isStreaming, resetStream]);
 
-
-  // Sidebar mic / quick commands ask for the voice assistant via a window event.
-  useEffect(() => {
-    const open = () => {
-      setWakeQuery('');
-      setJarvisAutoStart(true);
-      setJarvisOpen(true);
-    };
-    window.addEventListener(OPEN_VOICE_EVENT, open);
-    return () => window.removeEventListener(OPEN_VOICE_EVENT, open);
-  }, []);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -552,16 +538,7 @@ export function InputArea() {
   return (
     <>
       <div className="jarvis-input-dock">
-        <WakeAssistant
-          enabled={speechEnabled && !streamState.isStreaming}
-          resetKey={wakeResetKey}
-          onStatus={setWakeStatus}
-          onWake={(query) => {
-            setWakeQuery(query ?? '');
-            setJarvisAutoStart(true);
-            setJarvisOpen(true);
-          }}
-        />
+        <VoiceConversation sendMessage={sendMessage} />
 
 
         <div className="jarvis-command-bar">
@@ -609,8 +586,8 @@ export function InputArea() {
       </div>
 
       <div className="jarvis-wake-status" aria-live="polite">
-        <span className={speechEnabled ? 'jarvis-wake-dot is-active' : 'jarvis-wake-dot'} />
-        {wakeStatus}
+        <span className={speechEnabled && voicePhase !== 'unavailable' ? 'jarvis-wake-dot is-active' : 'jarvis-wake-dot'} />
+        {voicePhase === 'listening' && voiceHeard ? `🎙 ${voiceHeard}` : voiceStatus}
       </div>
 
       {deepResearch && corpusSync.syncing && corpusSync.itemsSynced > 0 && (
@@ -619,19 +596,6 @@ export function InputArea() {
         </div>
       )}
 
-      {jarvisOpen && (
-        <JarvisAssistant
-          autoStart={jarvisAutoStart}
-          initialQuery={wakeQuery}
-          onClose={() => {
-            setJarvisOpen(false);
-            setJarvisAutoStart(false);
-            setWakeQuery('');
-            setWakeResetKey((key) => key + 1);
-          }}
-          sendMessage={sendMessage}
-        />
-      )}
     </>
   );
 }

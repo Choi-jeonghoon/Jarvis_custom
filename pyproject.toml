@@ -190,6 +190,8 @@ speech = [
     "soundfile>=0.12",
 ]
 speech-deepgram = ["deepgram-sdk>=3.0"]
+# Free Microsoft Edge neural voices (Korean male "InJoon"); no API key, needs internet.
+voice-edge = ["edge-tts>=7.0"]
 eval-wandb = ["wandb>=0.17"]
 eval-sheets = ["gspread>=6.0", "google-auth>=2.0"]
 mining-pearl-cpu = [

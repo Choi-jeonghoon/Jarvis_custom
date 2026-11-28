@@ -37,10 +37,9 @@ export function ClaudeToggle() {
         onClick={onClick}
         title={active ? `Claude 사용 중 (${claudeModel}) — 클릭하면 기본 모델로 전환` : '클릭하면 Claude로 전환'}
       >
-        <Sparkles size={13} />
-        <span>CLAUDE</span>
-        <i className="cc-claude-knob"><b /></i>
-        <em>{active ? 'ON' : 'OFF'}</em>
+        <Sparkles size={14} aria-hidden="true" />
+        <span>Claude</span>
+        <i className="cc-claude-knob" aria-hidden="true"><b /></i>
       </button>
       {error && (
         <button type="button" className="cc-claude-error" onClick={() => navigate('/settings')}>

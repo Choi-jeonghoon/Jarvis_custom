@@ -35,7 +35,8 @@ OpenJarvis는 로컬 기기에서 먼저 동작하고 필요할 때만 클라우
 | 영역 | 내용 | 주요 파일 |
 |---|---|---|
 | 자비스 HUD UI | 3D 리액터와 HUD 스타일의 메인 화면, 커맨드 센터 | `frontend/src/components/Chat/JarvisReactor3D.tsx`, `frontend/src/components/CommandCenter/` |
-| 음성 / 호출어 | 음성 인식, 호출어로 비서 깨우기 | `frontend/src/hooks/useSpeech.ts`, `frontend/src/components/Chat/WakeAssistant.tsx` |
+| 음성 대화 | "헬로 자비스" → 영어 인사("Welcome back, sir") → 질문하면 현재 화면에 글로 표시하면서 음성으로 답변 (팝업 없음) | `frontend/src/components/Chat/VoiceConversation.tsx`, `frontend/src/lib/voice.ts` |
+| 자비스 목소리 | 무료 Microsoft Edge 뉴럴 음성. 답변은 한국어 남성 "InJoon", 인사는 영국 남성 "Ryan" (키 불필요, 인터넷 필요). 서버 음성이 안 되면 맥 음성으로 대체 | `src/openjarvis/speech/edge_tts_backend.py`, `~/.openjarvis/config.toml`의 `[speech]`, 설정 → Speech |
 | 마이크 상태 표시 | 마이크 연결 문제를 감지해서 표시 | `frontend/src/lib/micCheck.ts` |
 | Claude 연결 | Claude AI 사용 토글과 사용량 패널 | `frontend/src/components/CommandCenter/ClaudeToggle.tsx`, `frontend/src/components/ClaudeUsagePanel.tsx`, `src/openjarvis/engine/cloud.py` |
 | 박수 호출 (실험용) | 마이크로 박수 두 번을 감지해서 호출 | `clap_wake.py` |
@@ -185,6 +186,9 @@ jarvis gui --no-server                           # 프론트엔드만 실행
 | `Could not start the OpenJarvis API server.` | `~/.openjarvis/server.log` 확인 |
 | `Node.js/npm is required` | Node.js 22 이상 설치 |
 | `uv is required` | uv 설치 (`brew install uv`) |
+| "헬로 자비스"에 반응 없음 | Chrome 사용, 마이크 권한 허용, 설정 → Speech → "헬로 자비스 음성 호출" 켜기. 입력창 아래 상태 문구 확인 |
+| 호출은 되는데 소리가 안 남 | 브라우저 정책상 페이지를 한 번 클릭해야 소리가 납니다. 탭을 연 뒤 화면을 한 번 클릭해 두세요 |
+| 목소리가 InJoon이 아님 | `/v1/speech/tts/health`가 `edge_tts`인지 확인. 이미지를 `docker compose up -d --build`로 다시 빌드해야 edge-tts가 설치됨 |
 
 ## 명령어가 정의된 위치
 
