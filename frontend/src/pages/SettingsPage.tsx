@@ -19,6 +19,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useAppStore, type ThemeMode } from '../lib/store';
+import { AUTO_VOICE, listKoreanVoices, speakText } from '../lib/voice';
 import { deviceTimeZone, listTimeZones, resolveTimeZone, utcOffsetLabel } from '../lib/timezone';
 import {
   checkHealth,
@@ -295,6 +296,10 @@ export function SettingsPage() {
   const serverInfo = useAppStore((s) => s.serverInfo);
   const [healthy, setHealthy] = useState<boolean | null>(null);
   const [speechBackendAvailable, setSpeechBackendAvailable] = useState<boolean | null>(null);
+  const [koVoices, setKoVoices] = useState<SpeechSynthesisVoice[]>([]);
+  useEffect(() => {
+    void listKoreanVoices().then(setKoVoices);
+  }, []);
   const [ttsBackend, setTtsBackend] = useState<{ available: boolean; backend?: string; voice_id?: string } | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -813,7 +818,7 @@ export function SettingsPage() {
 
           {/* Speech */}
           <Section title="Speech">
-            <SettingRow label="Speech-to-Text" description="Enable microphone input for voice dictation">
+            <SettingRow label="헬로 자비스 음성 호출" description="마이크로 “헬로 자비스”를 듣고, 질문하면 화면에 글로 보여주며 음성으로 답합니다">
               <button
                 onClick={() => { updateSettings({ speechEnabled: !settings.speechEnabled }); showSaved(); }}
                 className="relative w-11 h-6 rounded-full transition-colors cursor-pointer"
@@ -880,6 +885,61 @@ export function SettingsPage() {
                     : ttsBackend.available ? `${ttsBackend.backend}${ttsBackend.voice_id ? ` / ${ttsBackend.voice_id}` : ''}`
                     : 'Not configured'}
                 </span>
+              </div>
+            </SettingRow>
+            <SettingRow
+              label="자비스 목소리"
+              description={ttsBackend?.available
+                ? `답변은 서버 음성(${ttsBackend.voice_id || ttsBackend.backend})으로 읽습니다 · 아래 선택은 서버 음성이 꺼졌을 때만 사용`
+                : '이 컴퓨터에 설치된 한국어 음성 · 자동은 남성 음성(Reed → Eddy → Rocko)을 고릅니다'}
+            >
+              <div className="flex items-center gap-2">
+                <select
+                  value={settings.voiceName}
+                  onChange={(e) => { updateSettings({ voiceName: e.target.value }); showSaved(); }}
+                  className="text-xs rounded px-2 py-1"
+                  style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text)' }}
+                >
+                  <option value={AUTO_VOICE}>자동 (남성)</option>
+                  {koVoices.map((v) => (
+                    <option key={v.voiceURI} value={v.name}>{v.name}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="text-xs rounded px-2 py-1 cursor-pointer"
+                  style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}
+                  onClick={() => void speakText('네, 어서오세요. 무엇을 도와드릴까요?', settings.voiceName)}
+                >
+                  미리 듣기
+                </button>
+              </div>
+            </SettingRow>
+            <SettingRow label="인사 목소리" description="“헬로 자비스”라고 불렀을 때의 첫 인사">
+              <div className="flex items-center gap-2">
+                <select
+                  value={settings.greetingVoice}
+                  onChange={(e) => { updateSettings({ greetingVoice: e.target.value }); showSaved(); }}
+                  className="text-xs rounded px-2 py-1"
+                  style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text)' }}
+                >
+                  <option value="en-GB-RyanNeural">영어 · Ryan (영국 남성)</option>
+                  <option value="en-GB-ThomasNeural">영어 · Thomas (영국 남성)</option>
+                  <option value="ko">한국어 · 답변 목소리와 같음</option>
+                </select>
+                <button
+                  type="button"
+                  className="text-xs rounded px-2 py-1 cursor-pointer"
+                  style={{ background: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)' }}
+                  onClick={() => void (settings.greetingVoice === 'ko'
+                    ? speakText('네, 어서오세요. 무엇을 도와드릴까요?', settings.voiceName)
+                    : speakText('Welcome back, sir. What can I do for you?', settings.voiceName, {
+                      serverVoiceId: settings.greetingVoice,
+                      lang: 'en-GB',
+                    }))}
+                >
+                  미리 듣기
+                </button>
               </div>
             </SettingRow>
             <SettingRow label="Backend status" description="Requires Whisper, Deepgram, or another speech backend">

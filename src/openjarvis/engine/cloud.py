@@ -43,6 +43,13 @@ PRICING: Dict[str, tuple[float, float]] = {
     "claude-opus-5-5": (4.00, 20.00),
     "claude-sonnet-5-5": (2.00, 10.00),
     "claude-haiku-5-5": (0.10, 0.50),
+    "claude-opus-5": (5.00, 25.00),
+    "claude-sonnet-5": (2.00, 10.00),
+    "claude-opus-4-8": (5.00, 25.00),
+    "claude-opus-4-7": (5.00, 25.00),
+    "claude-fable-5-2": (8.00, 40.00),
+    "claude-fable-5-1": (10.00, 50.00),
+    "claude-fable-5": (10.00, 50.00),
     "gemini-2.5-pro": (1.25, 10.00),
     "gemini-2.5-flash": (0.30, 2.50),
     "gemini-3-pro": (2.00, 12.00),
@@ -103,6 +110,7 @@ _ANTHROPIC_FIXED_SAMPLING_PREFIXES = (
     "claude-opus-5",
     "claude-sonnet-5",
     "claude-fable-5",
+    "claude-mythos-5",
     "claude-haiku-5-5",
 )
 # Models that return 400 on forced tool_choice ({"type": "any"|"tool"}).
@@ -111,6 +119,8 @@ _ANTHROPIC_NO_FORCED_TOOL_PREFIXES = (
     "claude-sonnet-5-5",
     "claude-fable-5-1",
     "claude-fable-5-2",
+    "claude-mythos-5-1",
+    "claude-mythos-5-2",
 )
 _GOOGLE_MODELS = [
     "gemini-2.5-pro",

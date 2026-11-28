@@ -1275,7 +1275,7 @@ def _tts_voice_and_speed(request: Request, backend) -> tuple[str, float]:
 
 @speech_router.post("/synthesize")
 async def synthesize_speech(request: Request, body: SpeechSynthesizeRequest):
-    """Synthesize text to speech and return the audio as WAV."""
+    """Synthesize text to speech and return the audio (WAV, or MP3 for edge_tts)."""
     text = body.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Missing 'text'")
@@ -1309,9 +1309,12 @@ async def synthesize_speech(request: Request, body: SpeechSynthesizeRequest):
         logger.exception("Speech synthesis failed")
         raise HTTPException(status_code=500, detail="Speech synthesis failed") from exc
 
+    # Some backends (edge_tts) can only produce MP3 whatever is requested;
+    # label the bytes with what they actually are.
+    media_type = "audio/mpeg" if result.format == "mp3" else "audio/wav"
     return Response(
         content=result.audio,
-        media_type="audio/wav",
+        media_type=media_type,
         headers={
             "X-Voice-Id": result.voice_id or voice_id,
             "X-Sample-Rate": str(result.sample_rate),

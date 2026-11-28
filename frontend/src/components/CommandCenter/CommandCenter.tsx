@@ -1,6 +1,6 @@
-import { Component, useMemo } from 'react';
+import { Component, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import {
   AlertTriangle,
   Bot,
@@ -26,10 +26,15 @@ import {
   Code2,
   ListChecks,
   Command,
+  Network,
+  Server,
 } from 'lucide-react';
 
 import { JarvisReactor3D } from '../Chat/JarvisReactor3D';
 import { useAppStore } from '../../lib/store';
+import { useModalStore } from '../../lib/ui-modals';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
+import '../Chat/JarvisStage.css';
 import type { ManagedAgent } from '../../lib/api';
 import {
   requestVoiceAssistant,
@@ -601,3 +606,47 @@ export function CommandCenter({
   );
 }
 
+/** All dashboard panels, opened from the sidebar's "시스템 현황" button. */
+export function DashboardModal() {
+  const open = useModalStore((s) => s.dashboardOpen);
+  const setOpen = useModalStore((s) => s.setDashboardOpen);
+  const selectedModel = useAppStore((s) => s.selectedModel);
+  const serverInfo = useAppStore((s) => s.serverInfo);
+  const { apiReachable } = useSharedCommandCenterData();
+  const network = apiReachable === null ? '확인 중' : apiReachable ? '정상' : '연결 끊김';
+
+  // Panel links navigate (e.g. "View all agents"); close so the page shows.
+  const { pathname } = useLocation();
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname, setOpen]);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="cc-modal cc-shell">
+        <header className="cc-modal-head">
+          <DialogTitle render={<h2 />}>시스템 현황</DialogTitle>
+          <p className="cc-modal-meta">
+            <span><Server size={12} /> {serverInfo?.engine ?? '—'}</span>
+            <span><Cpu size={12} /> {selectedModel || serverInfo?.model || '—'}</span>
+            <span className={apiReachable === false ? 'is-bad' : ''}><Network size={12} /> {network}</span>
+          </p>
+        </header>
+        <div className="cc-modal-body">
+          {open && (
+            <div className="cc-grid is-modal">
+              <CoreOverview />
+              <LiveFeed />
+              <QuickCommands />
+              <ActiveAgents />
+              <MissionTimeline />
+              <SystemMonitor />
+              <MemoryInsights />
+              <LlmStatus />
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { LayoutGrid, Monitor, Moon, Search, Settings, Sun, User, PanelLeft } from 'lucide-react';
+import { Menu, Search, Settings } from 'lucide-react';
 import { ApprovalBell } from '../ApprovalBell';
 import { useAppStore } from '../../lib/store';
 import { useSharedCommandCenterData } from './data';
@@ -15,6 +15,13 @@ function useClock() {
   return now;
 }
 
+const STATUS_TEXT = {
+  checking: '연결 확인 중',
+  offline: '서버 연결 끊김',
+  degraded: '일부 에이전트 점검 필요',
+  optimal: '정상 작동 중',
+} as const;
+
 export function TopBar() {
   const now = useClock();
   const navigate = useNavigate();
@@ -22,66 +29,48 @@ export function TopBar() {
   const setCommandPaletteOpen = useAppStore((s) => s.setCommandPaletteOpen);
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
-  const displayName = useAppStore((s) => s.optInDisplayName);
-  const settings = useAppStore((s) => s.settings);
-  const updateSettings = useAppStore((s) => s.updateSettings);
 
   const degraded = agents?.some((a) => ['error', 'needs_attention', 'stalled'].includes(a.status));
-  const status =
-    apiReachable === null ? 'CHECKING' : apiReachable === false ? 'OFFLINE' : degraded ? 'DEGRADED' : 'OPTIMAL';
-
-  const ThemeIcon = settings.theme === 'light' ? Sun : settings.theme === 'dark' ? Moon : Monitor;
-  const nextTheme = settings.theme === 'light' ? 'dark' : settings.theme === 'dark' ? 'system' : 'light';
+  const status: keyof typeof STATUS_TEXT =
+    apiReachable === null ? 'checking' : apiReachable === false ? 'offline' : degraded ? 'degraded' : 'optimal';
 
   return (
     <header className="cc-topbar">
       <div className="cc-topbar-left">
         {!sidebarOpen && (
-          <button type="button" className="cc-icon-btn" onClick={toggleSidebar} title="Open sidebar">
-            <PanelLeft size={16} />
+          <button type="button" className="cc-icon-btn" onClick={toggleSidebar} aria-label="메뉴 열기">
+            <Menu size={17} />
           </button>
         )}
-        <div className={`cc-status-pill status-${status.toLowerCase()}`}>
-          SYSTEM STATUS <i /> <b>{status}</b>
-        </div>
+        <span className={`cc-status status-${status}`} role="status">
+          <i aria-hidden="true" />
+          <span>{STATUS_TEXT[status]}</span>
+        </span>
       </div>
 
       <div className="cc-clock">
-        <small>
-          {now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </small>
-        <time>{now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time>
+        <time dateTime={now.toISOString()}>
+          {now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}
+        </time>
+        <small>{now.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })}</small>
       </div>
 
       <div className="cc-topbar-right">
         <ClaudeToggle />
-        <button type="button" className="cc-search" onClick={() => setCommandPaletteOpen(true)}>
-          <Search size={14} />
-          <span>Search…</span>
-          <kbd>⌘K</kbd>
-        </button>
-        <button type="button" className="cc-icon-btn" title="Dashboard" onClick={() => navigate('/dashboard')}>
-          <LayoutGrid size={16} />
-        </button>
-        <ApprovalBell inline />
         <button
           type="button"
-          className="cc-icon-btn"
-          title={`Theme: ${settings.theme}`}
-          onClick={() => updateSettings({ theme: nextTheme })}
+          className="cc-search"
+          onClick={() => setCommandPaletteOpen(true)}
+          aria-label="검색 및 명령"
         >
-          <ThemeIcon size={16} />
+          <Search size={15} />
+          <span>검색</span>
+          <kbd>⌘K</kbd>
         </button>
-        <button type="button" className="cc-icon-btn" title="Settings" onClick={() => navigate('/settings')}>
+        <ApprovalBell inline />
+        <button type="button" className="cc-icon-btn" aria-label="설정" onClick={() => navigate('/settings')}>
           <Settings size={16} />
         </button>
-        <div className="cc-operator">
-          <span>
-            <b>{displayName || 'Operator'}</b>
-            <small>Commander</small>
-          </span>
-          <i><User size={15} /></i>
-        </div>
       </div>
     </header>
   );

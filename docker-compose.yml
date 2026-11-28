@@ -26,12 +26,16 @@ services:
     container_name: jarvis-custom
     ports:
       # 내 맥에서만 접속 가능 (같은 와이파이의 다른 기기에서는 접속 불가)
+      # ⚠️ OPENJARVIS_API_KEY가 화면(JS) 안에 들어가 있으므로 "0.0.0.0:8000:8000" 처럼
+      #    외부에 열면 접속한 누구나 키를 볼 수 있습니다. 127.0.0.1 로만 유지하세요.
       - "127.0.0.1:8000:8000"
     environment:
       - OPENJARVIS_API_KEY=${OPENJARVIS_API_KEY}
       - OLLAMA_HOST=http://host.docker.internal:11434
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # 선택: 유료 ElevenLabs 음성. 기본 목소리는 무료 Edge 음성(InJoon)이라 비워 둬도 됨
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
       - TZ=Asia/Seoul
     volumes:
       # 기존 설정/대화/에이전트/지식베이스 데이터를 그대로 사용

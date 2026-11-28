@@ -4,6 +4,7 @@ import { SystemPulse } from './SystemPulse';
 import { useAppStore } from '../lib/store';
 import { TopBar } from './CommandCenter/TopBar';
 import { CommandCenterDataContext, useCommandCenterData } from './CommandCenter/data';
+import { DashboardModal } from './CommandCenter/CommandCenter';
 import './CommandCenter/CommandCenter.css';
 
 export function Layout() {
@@ -48,7 +49,8 @@ export function Layout() {
         <Sidebar />
         {sidebarOpen && (
           <div
-            className="fixed inset-0 z-20 bg-black/40 md:hidden"
+            className="cc-drawer-scrim"
+            aria-hidden="true"
             onClick={() => useAppStore.getState().setSidebarOpen(false)}
           />
         )}
@@ -59,6 +61,7 @@ export function Layout() {
           </div>
         </main>
       </div>
+      <DashboardModal />
     </div>
     </CommandCenterDataContext.Provider>
   );

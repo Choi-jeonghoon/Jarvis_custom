@@ -1,8 +1,27 @@
-import sounddevice as sd
-import numpy as np
+import os
 import time
 
-DEVICE = 3
+import numpy as np
+import sounddevice as sd
+
+# 사용할 마이크 이름 (일부만 써도 됨). 예: JARVIS_MIC="AirPods" python3 clap_wake.py
+PREFERRED_MIC = os.environ.get("JARVIS_MIC", "EarPods")
+
+
+def find_input_device(preferred: str):
+    """이름에 preferred가 들어간 입력 장치를 찾는다. 없으면 기본 입력(None).
+
+    장치 번호는 이어폰을 꽂고 빼거나 재부팅하면 바뀌므로 이름으로 찾는다.
+    """
+    for index, device in enumerate(sd.query_devices()):
+        name = device["name"]
+        if device["max_input_channels"] > 0 and preferred.lower() in name.lower():
+            return index, name
+    default = sd.query_devices(kind="input")
+    return None, default["name"]
+
+
+DEVICE, DEVICE_NAME = find_input_device(PREFERRED_MIC)
 RATE = 16000
 BLOCK_SIZE = 256
 
@@ -41,7 +60,10 @@ def callback(indata, frames, time_info, status):
 print("================================")
 print("       JARVIS WAKE LISTENER")
 print("================================")
-print("EarPods 마이크 대기 중...")
+print(f"마이크: {DEVICE_NAME}")
+if DEVICE is None:
+    print(f"({PREFERRED_MIC} 를 찾지 못해 기본 입력 장치를 사용합니다)")
+print("대기 중...")
 print("박수를 두 번 쳐보세요.")
 print("종료: Ctrl + C\n")
 

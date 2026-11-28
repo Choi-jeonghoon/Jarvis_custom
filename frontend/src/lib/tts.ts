@@ -22,7 +22,7 @@ interface TtsStore {
   available: boolean | null;
   /** Last message spoken by autoplay, so a re-render never repeats it. */
   autoSpokenId: string | null;
-  speak: (id: string, text: string) => Promise<void>;
+  speak: (id: string, text: string, opts?: { voiceId?: string }) => Promise<void>;
   stop: () => void;
   ensureHealth: () => Promise<void>;
   markAutoSpoken: (id: string) => void;
@@ -98,7 +98,7 @@ export const useTtsStore = create<TtsStore>((set, get) => ({
 
   markAutoSpoken: (id: string) => set({ autoSpokenId: id }),
 
-  speak: async (id: string, text: string) => {
+  speak: async (id: string, text: string, opts?: { voiceId?: string }) => {
     const trimmed = toSpeakableText(text);
     if (!trimmed) return;
 
@@ -113,7 +113,7 @@ export const useTtsStore = create<TtsStore>((set, get) => ({
     controller = ac;
 
     try {
-      const blob = await synthesizeSpeech(trimmed, { signal: ac.signal });
+      const blob = await synthesizeSpeech(trimmed, { signal: ac.signal, voiceId: opts?.voiceId });
       if (mine !== token) return;
 
       const url = URL.createObjectURL(blob);

@@ -1,13 +1,15 @@
 
 import { useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router';
-import { AudioLines, Cpu, Network, Server, FileBarChart } from 'lucide-react';
+import { AudioLines } from 'lucide-react';
 
 import { MessageBubble } from './MessageBubble';
 import { InputArea } from './InputArea';
 import { StreamingDots } from './StreamingDots';
-import { CommandCenter } from '../CommandCenter/CommandCenter';
-import { useSharedCommandCenterData } from '../CommandCenter/data';
+import { JarvisStage } from './JarvisStage';
+import type { OrbStatus } from './GoldOrb3D';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
+import { useModalStore } from '../../lib/ui-modals';
+import { useVoiceStore } from '../../lib/voice';
 
 import { useAppStore } from '../../lib/store';
 import {
@@ -18,8 +20,6 @@ import { stripThinkTags } from '../../lib/message-text';
 
 import './JarvisHome.css';
 import './JarvisHud3D.css';
-
-type ReactorStatus = 'idle' | 'thinking' | 'speaking';
 
 export function ChatArea() {
   const activeId = useAppStore((s) => s.activeId);
@@ -36,17 +36,16 @@ export function ChatArea() {
 
   const ttsState = useTtsStore((s) => s.state);
 
-  const navigate = useNavigate();
+  const voicePhase = useVoiceStore((s) => s.phase);
+  const voiceHeard = useVoiceStore((s) => s.heard);
+  const historyOpen = useModalStore((s) => s.historyOpen);
+  const setHistoryOpen = useModalStore((s) => s.setHistoryOpen);
 
   const listRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
   const wasStreaming = useRef(false);
   const lastScrollTop = useRef(0);
   const streamingConversationRef = useRef<string | null>(null);
-
-  const selectedModel = useAppStore((s) => s.selectedModel);
-  const serverInfo = useAppStore((s) => s.serverInfo);
-  const { apiReachable } = useSharedCommandCenterData();
 
   const isCurrentChatStreaming =
     streamState.isStreaming &&
@@ -59,11 +58,26 @@ export function ChatArea() {
   const hasConversation =
     messages.length > 0 || isCurrentChatStreaming;
 
-  const reactorStatus: ReactorStatus = isCurrentChatStreaming
-    ? 'thinking'
-    : ttsState === 'speaking'
-      ? 'speaking'
-      : 'idle';
+  const orbStatus: OrbStatus =
+    isCurrentChatStreaming || voicePhase === 'thinking'
+      ? 'thinking'
+      : ttsState === 'speaking' || voicePhase === 'speaking' || voicePhase === 'greeting'
+        ? 'speaking'
+        : voicePhase === 'listening'
+          ? 'listening'
+          : 'idle';
+
+  // The stage shows only the latest exchange; the rest is in "전체 대화".
+  const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
+  const latestQuestion = lastUserIndex >= 0 ? messages[lastUserIndex].content : '';
+  const latestAnswerMsg = messages
+    .slice(lastUserIndex + 1)
+    .reverse()
+    .find((m) => m.role === 'assistant');
+  const latestAnswer =
+    (isCurrentChatStreaming && streamState.content.length > (latestAnswerMsg?.content.length ?? 0)
+      ? streamState.content
+      : latestAnswerMsg?.content) ?? '';
 
   // TTS 서버 상태 확인
   useEffect(() => {
@@ -127,6 +141,19 @@ export function ChatArea() {
     voiceOutputEnabled,
     voiceAutoplay,
   ]);
+
+  // Open the full conversation at the latest answer, not the oldest message.
+  useEffect(() => {
+    if (!historyOpen) return;
+    // The dialog mounts in a portal; wait a beat, then scroll whichever
+    // element actually scrolls (the modal body).
+    const id = window.setTimeout(() => {
+      const list = listRef.current;
+      const scroller = list?.closest<HTMLElement>('.cc-modal-body') ?? list;
+      if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    }, 60);
+    return () => window.clearTimeout(id);
+  }, [historyOpen]);
 
   // 대화 자동 스크롤
   useEffect(() => {
@@ -214,45 +241,33 @@ export function ChatArea() {
     </div>
   ) : null;
 
-  const network =
-    apiReachable === null ? 'Checking' : apiReachable ? 'Excellent' : 'Offline';
-
   return (
     <div className="flex flex-col h-full jarvis-chat-page cc-page">
-      <div className="flex-1 min-h-0 relative overflow-auto cc-scroll">
-        <CommandCenter status={reactorStatus} conversation={conversation} />
+      <div className="flex-1 min-h-0 relative">
+        <JarvisStage
+          status={orbStatus}
+          question={latestQuestion}
+          answer={latestAnswer}
+          thinking={isCurrentChatStreaming}
+          heard={voicePhase === 'listening' ? voiceHeard : ''}
+          onOpenHistory={() => setHistoryOpen(true)}
+        />
       </div>
 
-      <footer className="cc-footer">
-        <div className="cc-footer-chips">
-          <div className="cc-chip-card">
-            <Server size={14} />
-            <span><small>Engine</small><b>{serverInfo?.engine ?? '—'}</b></span>
-          </div>
-          <div className="cc-chip-card">
-            <Cpu size={14} />
-            <span><small>Model</small><b>{selectedModel || serverInfo?.model || '—'}</b></span>
-          </div>
-          <div className={`cc-chip-card ${apiReachable === false ? 'is-bad' : ''}`}>
-            <Network size={14} />
-            <span><small>Network</small><b>{network}</b></span>
-          </div>
-        </div>
-
+      <footer className="cc-footer is-stage">
         <div className="cc-talk">
-          <span className="cc-talk-label">TALK TO JARVIS</span>
           <InputArea />
         </div>
-
-        <button
-          type="button"
-          className="cc-briefing"
-          onClick={() => navigate('/dashboard')}
-        >
-          <FileBarChart size={15} />
-          Executive Briefing
-        </button>
       </footer>
+
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="cc-modal is-narrow cc-shell">
+          <header className="cc-modal-head">
+            <DialogTitle render={<h2 />}>전체 대화</DialogTitle>
+          </header>
+          <div className="cc-modal-body">{conversation}</div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
